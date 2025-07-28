@@ -85,6 +85,27 @@ app.get('/api/test-tables', async (req, res) => {
   }
 });
 
+// Manual database initialization endpoint
+app.get('/api/init-db', async (req, res) => {
+  try {
+    console.log('Manual database initialization started...');
+    await initializeDatabase();
+    res.json({
+      status: 'OK',
+      message: 'Database initialized successfully',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Manual database initialization failed:', error);
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Database initialization failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/parties', require('./routes/partiesRoutes'));
@@ -105,16 +126,26 @@ app.use('/api/vendors', require('./routes/vendorsRoutes'));
 // Initialize database and start server
 const startServer = async () => {
   try {
+    console.log('Starting server initialization...');
+    console.log('Environment:', process.env.NODE_ENV || 'development');
+    console.log('Database host:', process.env.DB_HOST || 'localhost');
+    console.log('Database name:', process.env.DB_NAME || 'goodluck_tracker');
+    
     // Initialize database tables
+    console.log('Initializing database tables...');
     await initializeDatabase();
+    console.log('Database initialization completed successfully');
     
     // Start the server
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log('Server is ready to accept requests');
     });
   } catch (error) {
     console.error('Failed to start server:', error);
+    console.error('Error details:', error.message);
+    console.error('Error stack:', error.stack);
     process.exit(1);
   }
 };
