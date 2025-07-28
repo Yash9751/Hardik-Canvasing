@@ -196,6 +196,15 @@ app.get('/api/test-auth', (req, res) => {
   });
 });
 
+// Test dashboard endpoint
+app.get('/api/test-dashboard', (req, res) => {
+  res.json({
+    status: 'OK',
+    message: 'Dashboard test endpoint working',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Simple login test endpoint (GET method for testing)
 app.get('/api/test-login', async (req, res) => {
   try {
