@@ -308,196 +308,157 @@ const generateSaudaNotePDF = async (req, res) => {
       LEFT JOIN payment_conditions pc ON s.payment_condition_id = pc.id
       WHERE s.id = $1
     `, [id]);
+    
     if (result.rows.length === 0) {
       console.error('Sauda not found for PDF', { id });
       return res.status(404).json({ error: 'Sauda not found' });
     }
+    
     const sauda = result.rows[0];
     console.log('Generating Sauda Note PDF for:', sauda);
 
-    // Static company info
+    // Company info for Hardik Canvasing
     const company = {
-      name: 'Shree Hardik Corporation (25-26)',
-      address: '307, APMC Building, Market Yard, Unjha',
-      mail: 'hcunja2018@gmail.com',
-      contact: '9825067157',
-      phone: '(02767) 256762, 256763, 253762, 253763',
-      mobile: '9924311157, 9824711157',
-      gstin: '24ABMPT3200E1Z0',
-      proprietor: 'Proprietor',
+      name: 'HARDIK CANVASING',
+      business: 'Brokers in Edible Oil, Oilcakes Etc.,',
+      address: 'A 1503, Privilon, Ambli BRT Road, Iskon Crossroads, Ahmedabad, Gujarat 380054, India',
+      phone: '',
+      mobile: '9824711157',
+      email: 'same as old one', // You can update this with actual email
+      gstin: '24ABMPT3200E1Z0', // Keep your existing GSTIN
     };
 
-    // Determine seller/buyer for buy/sell
+    // Determine seller/buyer based on transaction type
     let seller, buyer;
     if (sauda.transaction_type === 'sell') {
       seller = {
-        name: 'Shree Goodluck Oil & Cotton Industries',
-        billing_address: '68, Dhanjinagar, B/h Eye Hospital, Unjha',
-        city: 'Jnjha',
-        state: '',
-        pincode: '',
+        name: 'SHREE GOODLUCK OIL AND COTTON INDUSTRIES, GUJRAT',
         gstin: company.gstin,
       };
       buyer = {
-        name: sauda.party_name,
-        billing_address: sauda.party_city || '',
-        city: sauda.party_city || '',
-        state: '',
-        pincode: '',
+        name: sauda.party_name.toUpperCase(),
         gstin: sauda.party_gstin || '',
       };
     } else {
       buyer = {
-        name: 'Shree Goodluck Oil & Cotton Industries',
-        billing_address: '68, Dhanjinagar, B/h Eye Hospital, Unjha',
-        city: 'Jnjha',
-        state: '',
-        pincode: '',
+        name: 'SHREE GOODLUCK OIL AND COTTON INDUSTRIES, GUJRAT',
         gstin: company.gstin,
       };
       seller = {
-        name: sauda.party_name,
-        billing_address: sauda.party_city || '',
-        city: sauda.party_city || '',
-        state: '',
-        pincode: '',
+        name: sauda.party_name.toUpperCase(),
         gstin: sauda.party_gstin || '',
       };
     }
 
     // Create PDF
-    const doc = new PDFDocument({ margin: 40, size: 'A4' });
+    const doc = new PDFDocument({ 
+      margin: 40, 
+      size: 'A4',
+      layout: 'portrait'
+    });
+    
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=Sauda_Note_${sauda.sauda_no}.pdf`);
+    res.setHeader('Content-Disposition', `attachment; filename=Contract_Confirmation_${sauda.sauda_no}.pdf`);
     doc.pipe(res);
 
-    // Header
-    doc.fontSize(20).font('Helvetica-Bold').text(company.name, { align: 'center' });
-    doc.moveDown(0.2);
-    doc.fontSize(12).font('Helvetica').text(company.address, { align: 'center' });
-    doc.text(`Mail : ${company.mail}, Contact (Whatsapp) : ${company.contact}`, { align: 'center' });
-    doc.text(`Phone : ${company.phone}  Mobile : ${company.mobile}`, { align: 'center' });
-    doc.moveDown(0.2);
-    doc.fontSize(14).font('Helvetica-Bold').text('Contract Note', { align: 'center', underline: true });
-    doc.moveDown(0.5);
+    // Page dimensions
+    const pageWidth = 595;
+    const pageHeight = 842;
+    const margin = 40;
+    const contentWidth = pageWidth - (2 * margin);
 
-    // Sauda No. and Date (side by side, no overlap, bigger font, more page width)
-    doc.fontSize(14).font('Helvetica-Bold');
-    const saudaNoText = `Sauda No. : ${sauda.sauda_no}`;
-    const saudaDateText = `Sauda Date : ${sauda.date ? new Date(sauda.date).toLocaleDateString('en-GB') : ''}`;
-    doc.text(saudaNoText, 50, doc.y, { continued: true });
-    const saudaDateWidth = doc.widthOfString(saudaDateText);
-    doc.text(saudaDateText, 540 - saudaDateWidth, doc.y, { align: 'right' });
-    doc.moveDown(0.3);
-    doc.fontSize(12).font('Helvetica').text('All Details like Party Name & Address are verified by GSTIN. So please use that for billing purpose.', { align: 'left' });
-    doc.moveDown(0.7);
+    // Header with grey background bars
+    doc.rect(0, 0, pageWidth, 60).fill('#F0F0F0');
+    doc.rect(0, pageHeight - 60, pageWidth, 60).fill('#F0F0F0');
 
-    // Seller/Buyer columns with more padding and spacing
-    const leftX = 50;
-    const rightX = 340;
-    let y = doc.y;
-    doc.font('Helvetica-Bold').fontSize(13).text('Seller :', leftX, y, { continued: true }).font('Helvetica').text(` ${seller.name}`, doc.x, y);
-    doc.font('Helvetica-Bold').fontSize(13).text('Buyer :', rightX, y, { continued: true }).font('Helvetica').text(` ${buyer.name}`, doc.x, y);
-    y = doc.y + 4;
-    doc.font('Helvetica').fontSize(12).text(`Billing Add : ${seller.billing_address}`, leftX, y);
-    doc.font('Helvetica').fontSize(12).text(`Billing Add : ${buyer.billing_address}`, rightX, y);
-    y = doc.y + 4;
-    doc.text(`City : ${seller.city}   State : ${seller.state}`, leftX, y);
-    doc.text(`City : ${buyer.city}   State : ${buyer.state}`, rightX, y);
-    y = doc.y + 4;
-    doc.text(`Pincode : ${seller.pincode}`, leftX, y);
-    doc.text(`Pincode : ${buyer.pincode}`, rightX, y);
-    y = doc.y + 4;
-    doc.text(`GSTIN : ${seller.gstin}`, leftX, y);
-    doc.text(`GSTIN : ${buyer.gstin}`, rightX, y);
-    y = doc.y + 14;
-    // Partition line between Seller/Buyer and next section
-    doc.moveTo(50, y).lineTo(560, y).stroke();
-    y += 10;
+    // Company name and details
+    doc.fontSize(24).font('Helvetica-Bold').fillColor('#000000');
+    doc.text(company.name, margin, 20, { align: 'center', width: contentWidth });
+    
+    doc.fontSize(14).font('Helvetica');
+    doc.text(company.business, margin, 50, { align: 'center', width: contentWidth });
+    
+    doc.fontSize(12);
+    doc.text(company.address, margin, 75, { align: 'center', width: contentWidth });
+    
+    doc.fontSize(11);
+    doc.text(`Phone: ${company.phone}`, margin, 100, { align: 'center', width: contentWidth });
+    doc.text(`Mobile: ${company.mobile}`, margin, 115, { align: 'center', width: contentWidth });
+    doc.text(`e-Mail Id: ${company.email}`, margin, 130, { align: 'center', width: contentWidth });
 
-    // Delivery/Payment/Narration columns with more padding
-    doc.font('Helvetica-Bold').fontSize(13).text('Delivery Condition :', leftX, y, { continued: true }).font('Helvetica').fontSize(12).text(` ${sauda.delivery_condition || ''}`, doc.x, y);
-    doc.font('Helvetica-Bold').fontSize(13).text('Narration :', rightX, y, { continued: true }).font('Helvetica').fontSize(12).text(` ${sauda.quantity_packs} to ${sauda.quantity_packs} MT (+1 Brokerage Added)`, doc.x, y);
-    y = doc.y + 4;
-    doc.font('Helvetica-Bold').fontSize(13).text('Payment Condition :', leftX, y, { continued: true }).font('Helvetica').fontSize(12).text(` ${sauda.payment_condition || ''}`, doc.x, y);
-    doc.font('Helvetica-Bold').fontSize(13).text('Delivery Add. :', rightX, y, { continued: true }).font('Helvetica').fontSize(12).text(' ', doc.x, y);
-    y = doc.y + 4;
-    doc.font('Helvetica-Bold').fontSize(13).text('Tax Type :', leftX, y, { continued: true }).font('Helvetica').fontSize(12).text(' + GST', doc.x, y);
-    y = doc.y + 4;
-    doc.font('Helvetica-Bold').fontSize(13).text('Delivery Type :', leftX, y, { continued: true }).font('Helvetica').fontSize(12).text(' -F.O.R. Delivery', doc.x, y);
-    y = doc.y + 14;
-    // Partition line before table
-    doc.moveTo(50, y).lineTo(560, y).stroke();
-    y += 12;
+    // Black bar for "CONTRACT CONFIRMATION"
+    doc.rect(margin, 160, contentWidth, 25).fill('#000000');
+    doc.fontSize(16).font('Helvetica-Bold').fillColor('#FFFFFF');
+    doc.text('CONTRACT CONFIRMATION', margin, 170, { align: 'center', width: contentWidth });
 
-    // Restore proportional column widths for the table (define before any use)
-    const pageLeft = 40;
-    const pageRight = 555; // A4 width 595 - margin 40
-    const tableX = pageLeft;
-    const tableWidth = pageRight - pageLeft;
-    // Proportional: Sr(6%), Item(24%), Packs(12%), Filling(14%), Qty(20%), Rate(24%)
-    const colWidths = {
-      sr: Math.round(tableWidth * 0.06),      // 6%
-      item: Math.round(tableWidth * 0.24),    // 24%
-      packs: Math.round(tableWidth * 0.12),   // 12%
-      filling: Math.round(tableWidth * 0.14), // 14%
-      qty: Math.round(tableWidth * 0.20),     // 20%
-      rate: tableWidth - (Math.round(tableWidth * 0.06) + Math.round(tableWidth * 0.24) + Math.round(tableWidth * 0.12) + Math.round(tableWidth * 0.14) + Math.round(tableWidth * 0.20)) // remainder
+    // Introductory statement
+    doc.fontSize(11).font('Helvetica').fillColor('#000000');
+    doc.text('We hereby inform you that, this contract sale / purchase business was concluded today over the telephonic conversation for below commidity.', margin, 200, { width: contentWidth });
+
+    // Contract details section
+    let y = 230;
+    const labelWidth = 120;
+    const valueWidth = contentWidth - labelWidth - 20;
+    const leftMargin = margin + 10;
+
+    const addDetailRow = (label, value) => {
+      doc.fontSize(11).font('Helvetica-Bold');
+      doc.text(label, leftMargin, y, { width: labelWidth });
+      doc.font('Helvetica');
+      doc.text(value, leftMargin + labelWidth + 10, y, { width: valueWidth });
+      y += 20;
     };
-    const colSr = tableX;
-    const colItem = colSr + colWidths.sr + 10;
-    const colPacks = colItem + colWidths.item + 10;
-    const colFilling = colPacks + colWidths.packs + 10;
-    const colQty = colFilling + colWidths.filling + 10;
-    const colRate = colQty + colWidths.qty + 10;
-    // After the previous section's line (partition line before table)
-    y += 16; // Add extra vertical space before table header
-    // Table Header boxed between two horizontal lines
-    doc.moveTo(pageLeft, y).lineTo(pageRight, y).stroke();
-    y += 6;
-    doc.font('Helvetica-Bold').fontSize(13);
-    doc.text('Sr.', colSr, y, { width: colWidths.sr, align: 'center' });
-    doc.text('Item Name', colItem, y, { width: colWidths.item, align: 'center' });
-    doc.text('Packs', colPacks, y, { width: colWidths.packs, align: 'center' });
-    doc.text('Filling', colFilling, y, { width: colWidths.filling, align: 'center' });
-    doc.text('Quantity', colQty, y, { width: colWidths.qty, align: 'center' });
-    doc.text('Rate', colRate, y, { width: colWidths.rate, align: 'center' });
-    y += 18;
-    doc.font('Helvetica-Bold').fontSize(12);
-    doc.text('', colSr, y, { width: colWidths.sr, align: 'center' });
-    doc.text('', colItem, y, { width: colWidths.item, align: 'center' });
-    doc.text('(M.T.)', colPacks, y, { width: colWidths.packs, align: 'center' });
-    doc.text('(*1000)', colFilling, y, { width: colWidths.filling, align: 'center' });
-    doc.text('(K.g.)', colQty, y, { width: colWidths.qty, align: 'center' });
-    doc.text('(Per 10 KGs)', colRate, y, { width: colWidths.rate, align: 'center' });
-    y += 16;
-    // Draw bottom line below header
-    doc.moveTo(pageLeft, y).lineTo(pageRight, y).stroke();
-    y += 8; // Space before data row
-    // Table Row with more vertical space and HSN Code on new line
-    doc.font('Helvetica').fontSize(13);
-    doc.text('1', colSr, y, { width: colWidths.sr, align: 'center' });
-    doc.text(`${sauda.item_name}`, colItem, y, { width: colWidths.item, align: 'left' });
-    doc.text(Number(sauda.quantity_packs).toFixed(2), colPacks, y, { width: colWidths.packs, align: 'center' });
-    doc.text('1000.00', colFilling, y, { width: colWidths.filling, align: 'center' });
-    doc.text((Number(sauda.quantity_packs) * 1000).toFixed(2), colQty, y, { width: colWidths.qty, align: 'center' });
-    doc.text(Number(sauda.rate_per_10kg).toFixed(3), colRate, y, { width: colWidths.rate, align: 'center' });
-    y += 20;
-    doc.font('Helvetica').fontSize(12).text(`HSN Code : ${sauda.hsn_code || ''}`, colItem, y, { width: colWidths.item, align: 'left' });
-    y += 24;
-    doc.font('Helvetica-Bold').fontSize(13).text('Total', colItem, y, { width: colWidths.item, align: 'left' });
-    doc.text(Number(sauda.quantity_packs).toFixed(2), colPacks, y, { width: colWidths.packs, align: 'center' });
-    doc.text((Number(sauda.quantity_packs) * 1000).toFixed(2), colQty, y, { width: colWidths.qty, align: 'center' });
-    y += 38;
-    doc.moveTo(pageLeft, y).lineTo(pageRight, y).stroke();
-    y += 14;
 
-    // Note and signature
-    doc.font('Helvetica').fontSize(12).text('Note : It is very much clear from above that the contract is between Seller & Purchaser are they themselves are responsible for any breach of terms & conditions settled between them. We stand ony as witness.', tableX, y, { width: 420 });
-    y += 36;
-    doc.font('Helvetica-Bold').fontSize(13).text(`For, Shree Hardik Corporation (25-26)`, tableX + 270, y, { align: 'right' });
-    y += 22;
-    doc.font('Helvetica').fontSize(13).text(company.proprietor, tableX + 370, y, { align: 'right' });
+    addDetailRow('CONTRACT NO.:', sauda.sauda_no);
+    addDetailRow('CONTRACT DATE:', new Date(sauda.date).toLocaleDateString('en-GB'));
+    addDetailRow('SELLER NAME:', seller.name);
+    addDetailRow('BUYER NAME:', buyer.name);
+    addDetailRow('MATERIAL:', sauda.item_name.toUpperCase());
+    addDetailRow('QUANTITY:', `${sauda.quantity_packs} TON`);
+    addDetailRow('RATE:', `${Number(sauda.rate_per_10kg).toFixed(2)} PER 10 KG + IGST, (${sauda.ex_plant_name || 'ADANI HAZIRA'})`);
+    addDetailRow('DELIVERY PERIOD:', sauda.loading_due_date ? new Date(sauda.loading_due_date).toLocaleDateString('en-GB') : 'AS PER CONTRACT');
+    addDetailRow('PAYMENT:', sauda.payment_condition || 'ADVANCE');
+    addDetailRow('REMARKS:', 'FIX DUTY');
+
+    // Terms and conditions
+    y += 20;
+    doc.fontSize(11).font('Helvetica-Bold');
+    doc.text('Other Terms:', leftMargin, y);
+    y += 20;
+
+    const terms = [
+      "Buyer must be lifting all quantity on or before above mentioned delivery period, if buyer don't lift then seller party have right to take decision on buyer and it should be acceptable by buyer.",
+      "Custom duty, levies, surcharge, taxes or additional duty will be on Seller's A/c. The rate will be fixed, custom duty paid and any charges in tarrif value.",
+      "Send duly signed copy of this contract as an acceptance, failing which, it shall be deemed as if the same has been accepted.",
+      "Kindly make note on this contract and in case of any discrepancy, kindly let us know immediately.",
+      "Once the delivery has been affected no complaints whatever shall be entertain.",
+      "Payment by advance D.D. Pay Slip, RTGS, NEFT or Fund Transfer.",
+      "On sending the goods to purchaser a copy of the bill be sent to us.",
+      "We will not be responsible if any profit / loss after deal.",
+      "Subject To Ahmedabad Jurisdiction."
+    ];
+
+    doc.fontSize(10).font('Helvetica');
+    terms.forEach(term => {
+      doc.text(`• ${term}`, leftMargin + 10, y, { width: contentWidth - 20 });
+      y += 25;
+    });
+
+    // Footer section
+    y = pageHeight - 120;
+    doc.fontSize(10).font('Helvetica');
+    
+    // Left side
+    doc.text(`GST# Seller: ${seller.gstin}, Buyer: ${buyer.gstin}`, margin + 10, y);
+    doc.text('Amogh Paragi Software Services, Pune. 814 955 2343', margin + 10, y + 15);
+    
+    // Right side
+    doc.text('E. & O.E.', margin + contentWidth - 50, y, { align: 'right' });
+    doc.text('Thanking You,', margin + contentWidth - 50, y + 15, { align: 'right' });
+    doc.text('For, HARDIK CANVASING, AHMEDABAD', margin + contentWidth - 50, y + 30, { align: 'right' });
+    
+    // Bottom right
+    doc.text('This is computer generated document and hence no signature required', margin + contentWidth - 50, y + 45, { align: 'right' });
 
     doc.end();
   } catch (error) {
