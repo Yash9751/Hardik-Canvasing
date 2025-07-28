@@ -17,4 +17,9 @@ router.get('/stock-wise', reportsController.getStockWiseReport);
 // Get party-wise report
 router.get('/party-wise', reportsController.getPartyWiseReport);
 
+// Export to Excel
+router.get('/export/excel', reportsController.exportExcel);
+// Export to PDF
+router.get('/export/pdf', reportsController.exportPDF);
+
 module.exports = router; 

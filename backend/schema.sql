@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS parties (
 CREATE TABLE IF NOT EXISTS items (
     id SERIAL PRIMARY KEY,
     item_name VARCHAR(100) UNIQUE NOT NULL,
+    nick_name VARCHAR(100),
     hsn_code VARCHAR(20),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -112,6 +113,62 @@ CREATE TABLE IF NOT EXISTS rates (
     effective_date DATE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(item_id, effective_date)
+);
+
+-- Vendors table for broadcast contacts
+CREATE TABLE IF NOT EXISTS vendors (
+    id SERIAL PRIMARY KEY,
+    vendor_name VARCHAR(200) NOT NULL,
+    contact_person VARCHAR(100),
+    mobile_number VARCHAR(15) UNIQUE NOT NULL,
+    whatsapp_number VARCHAR(15),
+    email VARCHAR(100),
+    city VARCHAR(100),
+    vendor_type VARCHAR(20) DEFAULT 'customer' CHECK (vendor_type IN ('customer', 'supplier', 'both')),
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Broadcast channels table
+CREATE TABLE IF NOT EXISTS broadcast_channels (
+    id SERIAL PRIMARY KEY,
+    channel_name VARCHAR(100) UNIQUE NOT NULL,
+    city VARCHAR(100),
+    description TEXT,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Vendor-channel mapping table
+CREATE TABLE IF NOT EXISTS vendor_channels (
+    id SERIAL PRIMARY KEY,
+    vendor_id INTEGER NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
+    channel_id INTEGER NOT NULL REFERENCES broadcast_channels(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(vendor_id, channel_id)
+);
+
+-- Channel-specific rates table
+CREATE TABLE IF NOT EXISTS channel_rates (
+    id SERIAL PRIMARY KEY,
+    channel_id INTEGER NOT NULL REFERENCES broadcast_channels(id) ON DELETE CASCADE,
+    item_id INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+    rate_per_10kg DECIMAL(10,2) NOT NULL,
+    effective_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(channel_id, item_id, effective_date)
+);
+
+-- Broadcast history table
+CREATE TABLE IF NOT EXISTS broadcast_history (
+    id SERIAL PRIMARY KEY,
+    broadcast_date DATE NOT NULL,
+    channel_id INTEGER NOT NULL REFERENCES broadcast_channels(id),
+    message_content TEXT NOT NULL,
+    recipients_count INTEGER DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'failed')),
+    sent_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Plus minus daily report table

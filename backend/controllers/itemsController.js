@@ -31,15 +31,19 @@ const getItemById = async (req, res) => {
 // Create new item
 const createItem = async (req, res) => {
     try {
-        const { item_name, hsn_code } = req.body;
+        const { item_name, nick_name, hsn_code } = req.body;
         
         if (!item_name) {
             return res.status(400).json({ error: 'Item name is required' });
         }
         
+        if (!nick_name) {
+            return res.status(400).json({ error: 'Nick name is required' });
+        }
+        
         const result = await db.query(
-            'INSERT INTO items (item_name, hsn_code) VALUES ($1, $2) RETURNING *',
-            [item_name, hsn_code || null]
+            'INSERT INTO items (item_name, nick_name, hsn_code) VALUES ($1, $2, $3) RETURNING *',
+            [item_name, nick_name, hsn_code || null]
         );
         
         res.status(201).json(result.rows[0]);
@@ -56,15 +60,19 @@ const createItem = async (req, res) => {
 const updateItem = async (req, res) => {
     try {
         const { id } = req.params;
-        const { item_name, hsn_code } = req.body;
+        const { item_name, nick_name, hsn_code } = req.body;
         
         if (!item_name) {
             return res.status(400).json({ error: 'Item name is required' });
         }
         
+        if (!nick_name) {
+            return res.status(400).json({ error: 'Nick name is required' });
+        }
+        
         const result = await db.query(
-            'UPDATE items SET item_name = $1, hsn_code = $2 WHERE id = $3 RETURNING *',
-            [item_name, hsn_code || null, id]
+            'UPDATE items SET item_name = $1, nick_name = $2, hsn_code = $3 WHERE id = $4 RETURNING *',
+            [item_name, nick_name, hsn_code || null, id]
         );
         
         if (result.rows.length === 0) {

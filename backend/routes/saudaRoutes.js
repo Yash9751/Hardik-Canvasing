@@ -23,4 +23,7 @@ router.put('/:id', saudaController.updateSauda);
 // Delete sauda
 router.delete('/:id', saudaController.deleteSauda);
 
+// Download Sauda Note PDF
+router.get('/:id/pdf', saudaController.generateSaudaNotePDF);
+
 module.exports = router; 

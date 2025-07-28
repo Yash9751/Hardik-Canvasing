@@ -45,35 +45,84 @@ const getSummary = async (req, res) => {
   }
 };
 
-// Get today's summary with proper formatting
+// Get today's summary with proper formatting using P&L logic
 const getTodaySummary = async (req, res) => {
   try {
-    // Get today's purchase summary
+    // Get today's purchase summary (strictly today's date)
+    const today = new Date().toISOString().split('T')[0];
     const todayPurchaseResult = await db.query(`
       SELECT 
         COALESCE(SUM(total_value), 0) as todayBuy,
-        COALESCE(COUNT(*), 0) as purchaseCount
+        COALESCE(COUNT(*), 0) as purchaseCount,
+        COALESCE(SUM(quantity_packs), 0) as todayBuyQuantity
       FROM sauda
-      WHERE date = CURRENT_DATE AND transaction_type = 'purchase'
-    `);
+      WHERE date = $1 AND transaction_type = 'purchase'
+    `, [today]);
 
-    // Get today's sell summary
+    // Get today's sell summary (strictly today's date)
     const todaySellResult = await db.query(`
       SELECT 
         COALESCE(SUM(total_value), 0) as todaySell,
-        COALESCE(COUNT(*), 0) as sellCount
+        COALESCE(COUNT(*), 0) as sellCount,
+        COALESCE(SUM(quantity_packs), 0) as todaySellQuantity
       FROM sauda
-      WHERE date = CURRENT_DATE AND transaction_type = 'sell'
+      WHERE date = $1 AND transaction_type = 'sell'
+    `, [today]);
+
+    // Get the effective date (today or latest available date)
+    const effectiveDateResult = await db.query(`
+      SELECT COALESCE(MAX(date), CURRENT_DATE) as effective_date
+      FROM sauda 
+      WHERE date <= CURRENT_DATE
     `);
+    const effectiveDate = effectiveDateResult.rows[0].effective_date;
+
+    // Check if P&L data exists for the effective date, if not generate it
+    const todayPLCheck = await db.query(`
+      SELECT COUNT(*) as count
+      FROM plus_minus
+      WHERE date = $1
+    `, [effectiveDate]);
+
+    if (todayPLCheck.rows[0].count == 0) {
+      console.log('No P&L data found for effective date - generating automatically');
+      // Import the plus minus controller to use its helper function
+      const plusMinusController = require('./plusMinusController');
+      await plusMinusController.generatePlusMinusForDate(effectiveDate.toISOString().split('T')[0]);
+    }
+
+    // Get P&L from plus_minus table for the effective date
+    const todayPLResult = await db.query(`
+      SELECT 
+        COALESCE(SUM(buy_total), 0) as totalBuy,
+        COALESCE(SUM(sell_total), 0) as totalSell,
+        COALESCE(SUM(profit), 0) as totalProfit
+      FROM plus_minus
+      WHERE date = $1
+    `, [effectiveDate]);
 
     const todayBuy = todayPurchaseResult.rows[0].todaybuy || 0;
     const todaySell = todaySellResult.rows[0].todaysell || 0;
-    const todayProfit = todaySell - todayBuy;
+    const todayProfit = todayPLResult.rows[0].totalprofit || 0; // Use P&L profit instead of simple difference
+    // Convert packs to MT (1 pack = 1 MT)
+    const todayBuyQuantity = (todayPurchaseResult.rows[0].todaybuyquantity || 0);
+    const todaySellQuantity = (todaySellResult.rows[0].todaysellquantity || 0);
+    
+    // Debug logging
+    console.log('Dashboard Debug - Raw data:', {
+      effectiveDate: effectiveDate,
+      todayBuyQuantityRaw: todayPurchaseResult.rows[0].todaybuyquantity,
+      todaySellQuantityRaw: todaySellResult.rows[0].todaysellquantity,
+      todayBuyQuantityConverted: todayBuyQuantity,
+      todaySellQuantityConverted: todaySellQuantity
+    });
 
     res.json({
-      todayBuy: todayBuy.toString(),
-      todaySell: todaySell.toString(),
-      todayProfit: todayProfit.toString(),
+      todayBuy: todayBuy,
+      todaySell: todaySell,
+      todayProfit: todayProfit,
+      todayBuyQuantity: todayBuyQuantity,
+      todaySellQuantity: todaySellQuantity,
       purchaseCount: todayPurchaseResult.rows[0].purchasecount || 0,
       sellCount: todaySellResult.rows[0].sellcount || 0
     });
@@ -115,16 +164,25 @@ const getTodayLoading = async (req, res) => {
 // Get today's purchase loading summary
 const getTodayPurchaseLoading = async (req, res) => {
   try {
+    // Use local date instead of database CURRENT_DATE to handle timezone
+    const today = new Date().toISOString().split('T')[0];
+    
     const result = await db.query(`
       SELECT 
         COALESCE(COUNT(*), 0) as count,
-        COALESCE(SUM(l.vajan_kg), 0) as totalVajan
+        COALESCE(SUM(l.vajan_kg), 0) as totalQuantity
       FROM loading l
       LEFT JOIN sauda s ON l.sauda_id = s.id
-      WHERE l.loading_date = CURRENT_DATE AND s.transaction_type = 'purchase'
-    `);
+      WHERE l.loading_date = $1 AND s.transaction_type = 'purchase'
+    `, [today]);
 
-    res.json(result.rows[0]);
+    // Convert kg to MT (1 MT = 1000 kg)
+    const totalQuantityMT = parseFloat(result.rows[0].totalquantity) / 1000;
+
+    res.json({
+      count: result.rows[0].count,
+      totalQuantity: totalQuantityMT
+    });
   } catch (error) {
     console.error('Get today purchase loading error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -134,18 +192,167 @@ const getTodayPurchaseLoading = async (req, res) => {
 // Get today's sell loading summary
 const getTodaySellLoading = async (req, res) => {
   try {
+    // Use local date instead of database CURRENT_DATE to handle timezone
+    const today = new Date().toISOString().split('T')[0];
+    
     const result = await db.query(`
       SELECT 
         COALESCE(COUNT(*), 0) as count,
-        COALESCE(SUM(l.vajan_kg), 0) as totalVajan
+        COALESCE(SUM(l.vajan_kg), 0) as totalQuantity
       FROM loading l
       LEFT JOIN sauda s ON l.sauda_id = s.id
-      WHERE l.loading_date = CURRENT_DATE AND s.transaction_type = 'sell'
-    `);
+      WHERE l.loading_date = $1 AND s.transaction_type = 'sell'
+    `, [today]);
 
-    res.json(result.rows[0]);
+    // Convert kg to MT (1 MT = 1000 kg)
+    const totalQuantityMT = parseFloat(result.rows[0].totalquantity) / 1000;
+
+    res.json({
+      count: result.rows[0].count,
+      totalQuantity: totalQuantityMT
+    });
   } catch (error) {
     console.error('Get today sell loading error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Get today's purchase details
+const getTodaysPurchaseDetails = async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    const result = await db.query(`
+      SELECT 
+        s.id,
+        s.sauda_no as sauda_number,
+        party.party_name,
+        item.item_name,
+        s.quantity_packs as quantity,
+        s.rate_per_10kg as rate,
+        s.total_value,
+        s.created_at,
+        ROUND(l.vajan_kg / 1000, 2) as loading_quantity,
+        s.rate_per_10kg as loading_rate,
+        ROUND((l.vajan_kg / 1000) * s.rate_per_10kg * 100, 2) as loading_total
+      FROM sauda s
+      LEFT JOIN parties party ON s.party_id = party.id
+      LEFT JOIN items item ON s.item_id = item.id
+      LEFT JOIN loading l ON s.id = l.sauda_id
+      WHERE DATE(s.created_at) = $1 AND s.transaction_type = 'purchase'
+      ORDER BY s.created_at DESC
+    `, [today]);
+
+    res.json({
+      purchases: result.rows,
+      date: today
+    });
+  } catch (error) {
+    console.error('Error fetching today\'s purchase details:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Get today's sell details
+const getTodaysSellDetails = async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    const result = await db.query(`
+      SELECT 
+        s.id,
+        s.sauda_no as sauda_number,
+        party.party_name,
+        item.item_name,
+        s.quantity_packs as quantity,
+        s.rate_per_10kg as rate,
+        s.total_value,
+        s.created_at,
+        ROUND(l.vajan_kg / 1000, 2) as loading_quantity,
+        s.rate_per_10kg as loading_rate,
+        ROUND((l.vajan_kg / 1000) * s.rate_per_10kg * 100, 2) as loading_total
+      FROM sauda s
+      LEFT JOIN parties party ON s.party_id = party.id
+      LEFT JOIN items item ON s.item_id = item.id
+      LEFT JOIN loading l ON s.id = l.sauda_id
+      WHERE DATE(s.created_at) = $1 AND s.transaction_type = 'sell'
+      ORDER BY s.created_at DESC
+    `, [today]);
+
+    res.json({
+      sells: result.rows,
+      date: today
+    });
+  } catch (error) {
+    console.error('Error fetching today\'s sell details:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Get purchase loading details
+const getPurchaseLoadingDetails = async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    const result = await db.query(`
+      SELECT 
+        l.id,
+        s.sauda_no as sauda_number,
+        party.party_name,
+        item.item_name,
+        ROUND(l.vajan_kg / 1000, 2) as quantity,
+        s.rate_per_10kg as rate,
+        ROUND((l.vajan_kg / 1000) * s.rate_per_10kg * 100, 2) as total_value,
+        l.created_at,
+        'Purchase Loading' as loading_type,
+        l.note as remarks
+      FROM loading l
+      LEFT JOIN sauda s ON l.sauda_id = s.id
+      LEFT JOIN parties party ON s.party_id = party.id
+      LEFT JOIN items item ON s.item_id = item.id
+      WHERE s.transaction_type = 'purchase' AND l.loading_date = $1
+      ORDER BY l.created_at DESC
+    `, [today]);
+
+    res.json({
+      loadings: result.rows
+    });
+  } catch (error) {
+    console.error('Error fetching purchase loading details:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Get sell loading details
+const getSellLoadingDetails = async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    const result = await db.query(`
+      SELECT 
+        l.id,
+        s.sauda_no as sauda_number,
+        party.party_name,
+        item.item_name,
+        ROUND(l.vajan_kg / 1000, 2) as quantity,
+        s.rate_per_10kg as rate,
+        ROUND((l.vajan_kg / 1000) * s.rate_per_10kg * 100, 2) as total_value,
+        l.created_at,
+        'Sell Loading' as loading_type,
+        l.note as remarks
+      FROM loading l
+      LEFT JOIN sauda s ON l.sauda_id = s.id
+      LEFT JOIN parties party ON s.party_id = party.id
+      LEFT JOIN items item ON s.item_id = item.id
+      WHERE s.transaction_type = 'sell' AND l.loading_date = $1
+      ORDER BY l.created_at DESC
+    `, [today]);
+
+    res.json({
+      loadings: result.rows
+    });
+  } catch (error) {
+    console.error('Error fetching sell loading details:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -155,5 +362,9 @@ module.exports = {
   getTodaySummary,
   getTodayLoading,
   getTodayPurchaseLoading,
-  getTodaySellLoading
+  getTodaySellLoading,
+  getTodaysPurchaseDetails,
+  getTodaysSellDetails,
+  getPurchaseLoadingDetails,
+  getSellLoadingDetails
 }; 

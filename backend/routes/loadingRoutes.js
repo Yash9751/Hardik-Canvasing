@@ -17,4 +17,7 @@ router.put('/:id', loadingController.updateLoading);
 // Delete loading entry
 router.delete('/:id', loadingController.deleteLoading);
 
+// Recalculate all pending quantities
+router.post('/recalculate-pending', loadingController.recalculateAllPendingQuantities);
+
 module.exports = router; 

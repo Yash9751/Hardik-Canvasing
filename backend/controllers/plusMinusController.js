@@ -1,4 +1,5 @@
 const db = require('../db');
+const puppeteer = require('puppeteer');
 
 const getDailyPlusMinus = async (req, res) => {
   try {
@@ -11,7 +12,11 @@ const getDailyPlusMinus = async (req, res) => {
         i.item_name,
         pm.buy_total,
         pm.sell_total,
-        pm.profit
+        pm.profit,
+        pm.buy_quantity,
+        pm.sell_quantity,
+        pm.avg_buy_rate,
+        pm.avg_sell_rate
       FROM plus_minus pm
       LEFT JOIN items i ON pm.item_id = i.id
       WHERE 1=1
@@ -19,7 +24,7 @@ const getDailyPlusMinus = async (req, res) => {
     let params = [];
 
     if (date) {
-      query += ` AND pm.date = $${params.length + 1}`;
+      query += ` AND pm.date::date = $${params.length + 1}`;
       params.push(date);
     }
 
@@ -38,86 +43,102 @@ const getDailyPlusMinus = async (req, res) => {
   }
 };
 
-const generateDailyPlusMinus = async (req, res) => {
+// Helper function to generate P&L data for a specific date
+const generatePlusMinusForDate = async (date) => {
   try {
-    const { date } = req.body;
-    
-    if (!date) {
-      return res.status(400).json({ message: 'Date is required' });
-    }
+    // Get all unique item+ex_plant combinations that have any buy or sell up to and including this date
+    const itemsResult = await db.query(`
+      SELECT DISTINCT item_id, ex_plant_id FROM sauda WHERE date <= $1
+    `, [date]);
 
-    // Calculate buy and sell totals for each item for the given date
-    const buyQuery = `
-      SELECT 
-        s.item_id,
-        i.item_name,
-        SUM(s.total_value) as total_buy
-      FROM sauda s
-      LEFT JOIN items i ON s.item_id = i.id
-      WHERE s.date = $1 AND s.transaction_type = 'purchase'
-      GROUP BY s.item_id, i.item_name
-    `;
-    const sellQuery = `
-      SELECT 
-        s.item_id,
-        i.item_name,
-        SUM(s.total_value) as total_sell
-      FROM sauda s
-      LEFT JOIN items i ON s.item_id = i.id
-      WHERE s.date = $1 AND s.transaction_type = 'sell'
-      GROUP BY s.item_id, i.item_name
-    `;
-
-    const buyResult = await db.query(buyQuery, [date]);
-    const sellResult = await db.query(sellQuery, [date]);
-
-    // Create a map of item totals
-    const buyMap = {};
-    const sellMap = {};
-
-    buyResult.rows.forEach(row => {
-      buyMap[row.item_id] = {
-        item_name: row.item_name,
-        total: parseFloat(row.total_buy)
-      };
-    });
-
-    sellResult.rows.forEach(row => {
-      sellMap[row.item_id] = {
-        item_name: row.item_name,
-        total: parseFloat(row.total_sell)
-      };
-    });
-
-    // Get all unique items
-    const allItems = new Set([
-      ...Object.keys(buyMap),
-      ...Object.keys(sellMap)
-    ]);
-
-    // Insert or update plus_minus records for each item
     const upsertQuery = `
-      INSERT INTO plus_minus (date, item_id, buy_total, sell_total)
-      VALUES ($1, $2, $3, $4)
-      ON CONFLICT (date, item_id)
+      INSERT INTO plus_minus (date, item_id, ex_plant_id, buy_total, sell_total, profit, buy_quantity, sell_quantity, avg_buy_rate, avg_sell_rate)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      ON CONFLICT (date, item_id, ex_plant_id)
       DO UPDATE SET 
         buy_total = EXCLUDED.buy_total,
         sell_total = EXCLUDED.sell_total,
+        profit = EXCLUDED.profit,
+        buy_quantity = EXCLUDED.buy_quantity,
+        sell_quantity = EXCLUDED.sell_quantity,
+        avg_buy_rate = EXCLUDED.avg_buy_rate,
+        avg_sell_rate = EXCLUDED.avg_sell_rate,
         created_at = CURRENT_TIMESTAMP
       RETURNING *
     `;
 
     const results = [];
-    for (const itemId of allItems) {
-      const buyTotal = buyMap[itemId]?.total || 0;
-      const sellTotal = sellMap[itemId]?.total || 0;
-      
-      const result = await db.query(upsertQuery, [date, itemId, buyTotal, sellTotal]);
+    for (const row of itemsResult.rows) {
+      const { item_id, ex_plant_id } = row;
+      // Cumulative purchase up to and including this date
+      const buyRes = await db.query(
+        `SELECT 
+          COALESCE(SUM(quantity_packs),0) as total_quantity_packs,
+          COALESCE(SUM(quantity_packs * 1000),0) as total_quantity_kg,
+          COALESCE(SUM(total_value),0) as total_buy_value
+        FROM sauda
+        WHERE transaction_type = 'purchase' AND item_id = $1 AND ex_plant_id = $2 AND date <= $3`,
+        [item_id, ex_plant_id, date]
+      );
+      // Cumulative sell up to and including this date
+      const sellRes = await db.query(
+        `SELECT 
+          COALESCE(SUM(quantity_packs * 1000),0) as total_quantity_kg,
+          COALESCE(SUM(quantity_packs),0) as total_quantity_packs,
+          COALESCE(SUM(total_value),0) as total_sell_value,
+          COALESCE(AVG(rate_per_10kg),0) as avg_sell_rate
+        FROM sauda
+        WHERE transaction_type = 'sell' AND item_id = $1 AND ex_plant_id = $2 AND date <= $3`,
+        [item_id, ex_plant_id, date]
+      );
+      const buy = buyRes.rows[0];
+      const sell = sellRes.rows[0];
+      const buyTotal = parseFloat(buy.total_buy_value) || 0;
+      const sellTotal = parseFloat(sell.total_sell_value) || 0;
+      const buyQuantityPacks = parseFloat(buy.total_quantity_packs) || 0;
+      const buyQuantityKg = parseFloat(buy.total_quantity_kg) || 0;
+      const sellQuantityKg = parseFloat(sell.total_quantity_kg) || 0;
+      const avgBuyRate = buyQuantityKg > 0 ? buyTotal / buyQuantityKg * 10 : 0; // per 10kg
+      const avgSellRate = parseFloat(sell.avg_sell_rate) || 0;
+      // Calculate profit using cumulative avg buy price
+      let profit = 0;
+      if (sellQuantityKg > 0 && avgBuyRate > 0) {
+        const avgSellRatePerKg = avgSellRate / 10;
+        const avgBuyRatePerKg = avgBuyRate / 10;
+        profit = (avgSellRatePerKg - avgBuyRatePerKg) * sellQuantityKg;
+      }
+      const result = await db.query(upsertQuery, [
+        date,
+        item_id,
+        ex_plant_id,
+        buyTotal,
+        sellTotal,
+        profit,
+        buyQuantityPacks,
+        sellQuantityKg,
+        avgBuyRate,
+        avgSellRate
+      ]);
       results.push(result.rows[0]);
     }
+    return results;
+  } catch (error) {
+    console.error('Generate plus minus for date error:', error);
+    throw error;
+  }
+};
+
+const generateDailyPlusMinus = async (req, res) => {
+  try {
+    const { date } = req.body;
+    if (!date) {
+      return res.status(400).json({ message: 'Date is required' });
+    }
+
+    const results = await generatePlusMinusForDate(date);
 
     res.json({
-      message: 'Daily plus minus generated successfully',
+      message: 'Daily plus minus generated successfully with cumulative average buying price',
       data: results
     });
   } catch (error) {
@@ -186,7 +207,11 @@ const getTodayPlusMinus = async (req, res) => {
         i.item_name,
         pm.buy_total,
         pm.sell_total,
-        pm.profit
+        pm.profit,
+        pm.buy_quantity,
+        pm.sell_quantity,
+        pm.avg_buy_rate,
+        pm.avg_sell_rate
       FROM plus_minus pm
       LEFT JOIN items i ON pm.item_id = i.id
       WHERE pm.date = $1
@@ -214,9 +239,350 @@ const getTodayPlusMinus = async (req, res) => {
   }
 };
 
+// Recalculate all plus_minus (utility endpoint)
+const recalculateAllPlusMinus = async (req, res) => {
+  try {
+    // Clear the plus_minus table
+    await db.query('DELETE FROM plus_minus');
+    // Get all unique dates from sauda
+    const result = await db.query('SELECT DISTINCT date FROM sauda ORDER BY date');
+    for (const row of result.rows) {
+      // Use the date directly without timezone conversion
+      const dateStr = row.date.toISOString().split('T')[0];
+      console.log('Recalculating for date:', dateStr, 'Original date:', row.date);
+      // Use the same logic as generateDailyPlusMinus for each date
+      await module.exports.generateDailyPlusMinus({ body: { date: dateStr } }, { json: () => {} });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error recalculating all plus_minus:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Helper: Generate plus_minus for a given date, item, ex_plant
+async function generatePlusMinusFor(date, item_id, ex_plant_id) {
+  // This should match your existing logic for generating a plus_minus row
+  // (You may need to adjust this to match your actual implementation)
+  // Example:
+  const buyRes = await db.query(
+    `SELECT COALESCE(SUM(quantity_packs * rate_per_10kg * 100), 0) as buy_total
+     FROM sauda WHERE transaction_type = 'purchase' AND date = $1 AND item_id = $2 AND ex_plant_id = $3`,
+    [date, item_id, ex_plant_id]
+  );
+  const sellRes = await db.query(
+    `SELECT COALESCE(SUM(quantity_packs * rate_per_10kg * 100), 0) as sell_total
+     FROM sauda WHERE transaction_type = 'sell' AND date = $1 AND item_id = $2 AND ex_plant_id = $3`,
+    [date, item_id, ex_plant_id]
+  );
+  const buy_total = parseFloat(buyRes.rows[0].buy_total);
+  const sell_total = parseFloat(sellRes.rows[0].sell_total);
+  await db.query(
+    `INSERT INTO plus_minus (date, item_id, ex_plant_id, buy_total, sell_total)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (date, item_id, ex_plant_id) DO UPDATE SET buy_total = $4, sell_total = $5`,
+    [date, item_id, ex_plant_id, buy_total, sell_total]
+  );
+}
+
+// Export P&L report as PDF
+const exportPDF = async (req, res) => {
+  try {
+    const { date } = req.query;
+    
+    // Get P&L data for the specified date
+    const query = `
+      SELECT 
+        pm.date,
+        pm.item_id,
+        i.item_name,
+        pm.buy_total,
+        pm.sell_total,
+        pm.profit,
+        pm.buy_quantity,
+        pm.sell_quantity,
+        pm.avg_buy_rate,
+        pm.avg_sell_rate
+      FROM plus_minus pm
+      LEFT JOIN items i ON pm.item_id = i.id
+      WHERE pm.date = $1
+      ORDER BY i.item_name
+    `;
+
+    const result = await db.query(query, [date]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'No P&L data found for this date' });
+    }
+
+    // Calculate totals
+    const totals = result.rows.reduce((acc, row) => {
+      acc.totalBuy += parseFloat(row.buy_total);
+      acc.totalSell += parseFloat(row.sell_total);
+      acc.totalProfit += parseFloat(row.profit);
+      acc.totalBuyQuantity += parseFloat(row.buy_quantity);
+      acc.totalSellQuantity += parseFloat(row.sell_quantity);
+      return acc;
+    }, { totalBuy: 0, totalSell: 0, totalProfit: 0, totalBuyQuantity: 0, totalSellQuantity: 0 });
+
+    // Generate HTML content for PDF
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>P&L Report - ${date}</title>
+        <style>
+          body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            color: #333;
+            line-height: 1.6;
+          }
+          .header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            border-bottom: 2px solid #007AFF;
+            padding-bottom: 20px;
+          }
+          .header h1 {
+            color: #007AFF;
+            margin-bottom: 10px;
+          }
+          .header h2 {
+            color: #666;
+            font-weight: normal;
+          }
+          .summary { 
+            margin-bottom: 30px; 
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+          }
+          .summary h3 {
+            color: #007AFF;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 10px;
+          }
+          .summary-row { 
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 10px; 
+            padding: 5px 0;
+          }
+          .summary-row span:first-child {
+            font-weight: 600;
+            color: #555;
+          }
+          .summary-row span:last-child {
+            font-weight: bold;
+            color: #333;
+          }
+          table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-bottom: 20px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          }
+          th, td { 
+            border: 1px solid #ddd; 
+            padding: 12px 8px; 
+            text-align: left; 
+          }
+          th { 
+            background-color: #007AFF; 
+            color: white;
+            font-weight: bold; 
+          }
+          tr:nth-child(even) {
+            background-color: #f8f9fa;
+          }
+          .profit { color: #28a745; font-weight: bold; }
+          .loss { color: #dc3545; font-weight: bold; }
+          .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            border-top: 1px solid #dee2e6;
+            padding-top: 20px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Profit & Loss Report</h1>
+          <h2>Date: ${date}</h2>
+        </div>
+        
+        <div class="summary">
+          <h3>Summary</h3>
+          <div class="summary-row">
+            <span>Total Purchase Quantity:</span>
+            <span>${totals.totalBuyQuantity.toFixed(2)} MT</span>
+          </div>
+          <div class="summary-row">
+            <span>Total Sell Quantity:</span>
+            <span>${totals.totalSellQuantity.toFixed(2)} MT</span>
+          </div>
+          <div class="summary-row">
+            <span>Total Purchase Value:</span>
+            <span>₹${totals.totalBuy.toLocaleString()}</span>
+          </div>
+          <div class="summary-row">
+            <span>Total Sell Value:</span>
+            <span>₹${totals.totalSell.toLocaleString()}</span>
+          </div>
+          <div class="summary-row">
+            <span>Net Profit/Loss:</span>
+            <span class="${totals.totalProfit >= 0 ? 'profit' : 'loss'}">₹${totals.totalProfit.toLocaleString()}</span>
+          </div>
+        </div>
+        
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Purchase Qty (MT)</th>
+              <th>Avg Purchase Rate</th>
+              <th>Sell Qty (MT)</th>
+              <th>Avg Sell Rate</th>
+              <th>Profit/Loss</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${result.rows.map(row => `
+              <tr>
+                <td>${row.item_name}</td>
+                <td>${parseFloat(row.buy_quantity).toFixed(2)}</td>
+                <td>₹${parseFloat(row.avg_buy_rate).toFixed(2)}</td>
+                <td>${parseFloat(row.sell_quantity).toFixed(2)}</td>
+                <td>₹${parseFloat(row.avg_sell_rate).toFixed(2)}</td>
+                <td class="${parseFloat(row.profit) >= 0 ? 'profit' : 'loss'}">₹${parseFloat(row.profit).toLocaleString()}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        
+        <div class="footer">
+          <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
+          <p>Good Luck Traders - P&L Report</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Launch browser and generate PDF
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    
+    const page = await browser.newPage();
+    await page.setContent(htmlContent);
+    
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      margin: {
+        top: '20mm',
+        right: '20mm',
+        bottom: '20mm',
+        left: '20mm'
+      },
+      printBackground: true
+    });
+    
+    await browser.close();
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="pnl-report-${date}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Export PDF error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Export P&L report as Excel
+const exportExcel = async (req, res) => {
+  try {
+    const { date } = req.query;
+    
+    // Get P&L data for the specified date
+    const query = `
+      SELECT 
+        pm.date,
+        pm.item_id,
+        i.item_name,
+        pm.buy_total,
+        pm.sell_total,
+        pm.profit,
+        pm.buy_quantity,
+        pm.sell_quantity,
+        pm.avg_buy_rate,
+        pm.avg_sell_rate
+      FROM plus_minus pm
+      LEFT JOIN items i ON pm.item_id = i.id
+      WHERE pm.date = $1
+      ORDER BY i.item_name
+    `;
+
+    const result = await db.query(query, [date]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'No P&L data found for this date' });
+    }
+
+    // Calculate totals
+    const totals = result.rows.reduce((acc, row) => {
+      acc.totalBuy += parseFloat(row.buy_total);
+      acc.totalSell += parseFloat(row.sell_total);
+      acc.totalProfit += parseFloat(row.profit);
+      acc.totalBuyQuantity += parseFloat(row.buy_quantity);
+      acc.totalSellQuantity += parseFloat(row.sell_quantity);
+      return acc;
+    }, { totalBuy: 0, totalSell: 0, totalProfit: 0, totalBuyQuantity: 0, totalSellQuantity: 0 });
+
+    // Generate CSV content for Excel
+    const csvContent = [
+      ['P&L Report - ' + date],
+      [''],
+      ['Summary'],
+      ['Total Purchase Quantity (MT)', totals.totalBuyQuantity.toFixed(2)],
+      ['Total Sell Quantity (MT)', totals.totalSellQuantity.toFixed(2)],
+      ['Total Purchase Value', totals.totalBuy.toLocaleString()],
+      ['Total Sell Value', totals.totalSell.toLocaleString()],
+      ['Net Profit/Loss', totals.totalProfit.toLocaleString()],
+      [''],
+      ['Product-wise Breakdown'],
+      ['Product', 'Purchase Qty (MT)', 'Avg Purchase Rate', 'Sell Qty (MT)', 'Avg Sell Rate', 'Profit/Loss'],
+      ...result.rows.map(row => [
+        row.item_name,
+        parseFloat(row.buy_quantity).toFixed(2),
+        parseFloat(row.avg_buy_rate).toFixed(2),
+        parseFloat(row.sell_quantity).toFixed(2),
+        parseFloat(row.avg_sell_rate).toFixed(2),
+        parseFloat(row.profit).toLocaleString()
+      ])
+    ].map(row => row.join(',')).join('\n');
+
+    res.setHeader('Content-Type', 'application/vnd.ms-excel');
+    res.setHeader('Content-Disposition', `attachment; filename="pnl-report-${date}.xls"`);
+    res.send(csvContent);
+  } catch (error) {
+    console.error('Export Excel error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 module.exports = {
   getDailyPlusMinus,
   generateDailyPlusMinus,
+  generatePlusMinusForDate,
   getPlusMinusSummary,
-  getTodayPlusMinus
+  getTodayPlusMinus,
+  recalculateAllPlusMinus,
+  exportPDF,
+  exportExcel,
 }; 

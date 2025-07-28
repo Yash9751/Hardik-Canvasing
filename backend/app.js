@@ -1,6 +1,6 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
 const app = express();
 
 const PORT = process.env.PORT || 5001;
@@ -30,6 +30,7 @@ app.use('/api/stock', require('./routes/stockRoutes'));
 app.use('/api/reports', require('./routes/reportsRoutes'));
 app.use('/api/plusminus', require('./routes/plusMinusRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+app.use('/api/vendors', require('./routes/vendorsRoutes'));
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

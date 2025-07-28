@@ -14,9 +14,15 @@
   "type": "commonjs",
   "dependencies": {
     "cors": "^2.8.5",
-    "dotenv": "^16.5.0",
+    "csv-parser": "^3.2.0",
+    "dotenv": "^16.6.1",
+    "exceljs": "^4.4.0",
     "express": "^5.1.0",
-    "pg": "^8.16.2"
+    "multer": "^2.0.2",
+    "pg": "^8.16.2",
+    "puppeteer": "^24.14.0",
+    "twilio": "^5.7.3",
+    "vcard-parser": "^1.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

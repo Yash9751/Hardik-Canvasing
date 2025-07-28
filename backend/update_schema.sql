@@ -22,3 +22,7 @@ END $$;
 -- Update existing records to have created_at timestamp
 UPDATE buy SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL;
 UPDATE sell SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL; 
+
+-- Add unique constraint for plus_minus upsert (P&L report)
+ALTER TABLE plus_minus
+ADD CONSTRAINT plus_minus_unique UNIQUE (date, item_id, ex_plant_id); 
