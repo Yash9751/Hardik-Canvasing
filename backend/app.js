@@ -183,6 +183,65 @@ app.get('/api/test-schema', (req, res) => {
   }
 });
 
+// Test auth routes endpoint
+app.get('/api/test-auth', (req, res) => {
+  res.json({
+    status: 'OK',
+    message: 'Auth routes are accessible',
+    endpoints: {
+      login: 'POST /api/auth/login',
+      test: 'GET /api/test-auth'
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Simple login test endpoint (GET method for testing)
+app.get('/api/test-login', async (req, res) => {
+  try {
+    const pool = require('./db');
+    const { username, password } = req.query;
+    
+    if (!username || !password) {
+      return res.status(400).json({
+        status: 'ERROR',
+        message: 'Username and password are required as query parameters',
+        example: '/api/test-login?username=admin&password=admin123'
+      });
+    }
+    
+    const query = 'SELECT * FROM admin_user WHERE username = $1 AND password = $2';
+    const result = await pool.query(query, [username, password]);
+    
+    if (result.rows.length === 0) {
+      return res.status(401).json({
+        status: 'ERROR',
+        message: 'Invalid credentials',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    const user = result.rows[0];
+    res.json({
+      status: 'OK',
+      message: 'Login successful',
+      user: {
+        id: user.id,
+        username: user.username
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Test login error:', error);
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Login test failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/parties', require('./routes/partiesRoutes'));
