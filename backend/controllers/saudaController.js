@@ -324,8 +324,8 @@ const generateSaudaNotePDF = async (req, res) => {
       address: 'A 1503, Privilon, Ambli BRT Road, Iskon Crossroads, Ahmedabad, Gujarat 380054, India',
       phone: '',
       mobile: '9824711157',
-      email: 'same as old one',
-      gstin: '24ABMPT3200E1Z0',
+      email: 'same as old one', // You can update this with actual email
+      gstin: '24ABMPT3200E1Z0', // Keep your existing GSTIN
     };
 
     // Determine seller/buyer based on transaction type
@@ -352,13 +352,13 @@ const generateSaudaNotePDF = async (req, res) => {
 
     // Create PDF
     const doc = new PDFDocument({ 
-      margin: 0, 
+      margin: 40, 
       size: 'A4',
       layout: 'portrait'
     });
     
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=Sauda_Note_${sauda.sauda_no}.pdf`);
+    res.setHeader('Content-Disposition', `attachment; filename=Contract_Confirmation_${sauda.sauda_no}.pdf`);
     doc.pipe(res);
 
     // Page dimensions
@@ -367,45 +367,46 @@ const generateSaudaNotePDF = async (req, res) => {
     const margin = 40;
     const contentWidth = pageWidth - (2 * margin);
 
-    // Top black bar
-    doc.rect(0, 0, pageWidth, 3).fill('#000000');
+    // Header with grey background bars
+    doc.rect(0, 0, pageWidth, 60).fill('#F0F0F0');
+    doc.rect(0, pageHeight - 60, pageWidth, 60).fill('#F0F0F0');
 
-    // Company name and details - compact spacing
-    doc.fontSize(20).font('Helvetica-Bold').fillColor('#000000');
-    doc.text(company.name, margin, 15, { align: 'center', width: contentWidth });
+    // Company name and details
+    doc.fontSize(24).font('Helvetica-Bold').fillColor('#000000');
+    doc.text(company.name, margin, 20, { align: 'center', width: contentWidth });
     
-    doc.fontSize(11).font('Helvetica');
-    doc.text(company.business, margin, 40, { align: 'center', width: contentWidth });
+    doc.fontSize(14).font('Helvetica');
+    doc.text(company.business, margin, 50, { align: 'center', width: contentWidth });
     
-    doc.fontSize(9);
-    doc.text(company.address, margin, 55, { align: 'center', width: contentWidth });
+    doc.fontSize(12);
+    doc.text(company.address, margin, 75, { align: 'center', width: contentWidth });
     
-    doc.fontSize(8);
-    doc.text(`Phone: ${company.phone}`, margin, 75, { align: 'left', width: contentWidth });
-    doc.text(`Mobile: ${company.mobile}`, margin, 85, { align: 'left', width: contentWidth });
-    doc.text(`e-Mail Id: ${company.email}`, margin, 95, { align: 'left', width: contentWidth });
+    doc.fontSize(11);
+    doc.text(`Phone: ${company.phone}`, margin, 100, { align: 'center', width: contentWidth });
+    doc.text(`Mobile: ${company.mobile}`, margin, 115, { align: 'center', width: contentWidth });
+    doc.text(`e-Mail Id: ${company.email}`, margin, 130, { align: 'center', width: contentWidth });
 
     // Black bar for "CONTRACT CONFIRMATION"
-    doc.rect(margin, 115, contentWidth, 18).fill('#000000');
-    doc.fontSize(13).font('Helvetica-Bold').fillColor('#FFFFFF');
-    doc.text('CONTRACT CONFIRMATION', margin, 122, { align: 'center', width: contentWidth });
+    doc.rect(margin, 160, contentWidth, 25).fill('#000000');
+    doc.fontSize(16).font('Helvetica-Bold').fillColor('#FFFFFF');
+    doc.text('CONTRACT CONFIRMATION', margin, 170, { align: 'center', width: contentWidth });
 
     // Introductory statement
-    doc.fontSize(9).font('Helvetica').fillColor('#000000');
-    doc.text('We hereby inform you that, this contract sale / purchase business was concluded today over the telephonic conversation for below commidity.', margin, 145, { width: contentWidth });
+    doc.fontSize(11).font('Helvetica').fillColor('#000000');
+    doc.text('We hereby inform you that, this contract sale / purchase business was concluded today over the telephonic conversation for below commidity.', margin, 200, { width: contentWidth });
 
-    // Contract details section - compact spacing
-    let y = 165;
+    // Contract details section
+    let y = 230;
     const labelWidth = 120;
-    const valueWidth = contentWidth - labelWidth - 15;
+    const valueWidth = contentWidth - labelWidth - 20;
     const leftMargin = margin + 10;
 
     const addDetailRow = (label, value) => {
-      doc.fontSize(9).font('Helvetica-Bold');
+      doc.fontSize(11).font('Helvetica-Bold');
       doc.text(label, leftMargin, y, { width: labelWidth });
       doc.font('Helvetica');
       doc.text(value, leftMargin + labelWidth + 10, y, { width: valueWidth });
-      y += 15;
+      y += 20;
     };
 
     addDetailRow('CONTRACT NO.:', sauda.sauda_no);
@@ -419,11 +420,11 @@ const generateSaudaNotePDF = async (req, res) => {
     addDetailRow('PAYMENT:', sauda.payment_condition || 'ADVANCE');
     addDetailRow('REMARKS:', 'FIX DUTY');
 
-    // Terms and conditions - compact spacing
-    y += 10;
-    doc.fontSize(9).font('Helvetica-Bold');
+    // Terms and conditions
+    y += 20;
+    doc.fontSize(11).font('Helvetica-Bold');
     doc.text('Other Terms:', leftMargin, y);
-    y += 12;
+    y += 20;
 
     const terms = [
       "Buyer must be lifting all quantity on or before above mentioned delivery period, if buyer don't lift then seller party have right to take decision on buyer and it should be acceptable by buyer.",
@@ -437,30 +438,28 @@ const generateSaudaNotePDF = async (req, res) => {
       "Subject To Ahmedabad Jurisdiction."
     ];
 
-    doc.fontSize(8).font('Helvetica');
+    doc.fontSize(10).font('Helvetica');
     terms.forEach(term => {
-      doc.text(`• ${term}`, leftMargin + 8, y, { width: contentWidth - 25 });
-      y += 16;
+      doc.text(`• ${term}`, leftMargin + 10, y, { width: contentWidth - 20 });
+      y += 25;
     });
 
-    // Footer section - properly positioned and aligned
-    y = pageHeight - 80;
-    doc.fontSize(8).font('Helvetica');
+    // Footer section
+    y = pageHeight - 120;
+    doc.fontSize(10).font('Helvetica');
     
-    // Left side - GST info
-    doc.text(`GST# Seller: ${seller.gstin}, Buyer: ${buyer.gstin}`, margin + 10, y);
-    doc.text('Amogh Paragi Software Services, Pune. 814 955 2343', margin + 10, y + 10);
+    // Left side - fixed positioning to prevent overlapping
+    doc.text(`GST# Seller: ${seller.gstin}`, margin + 10, y);
+    doc.text(`Buyer: ${buyer.gstin}`, margin + 10, y + 15);
+    doc.text('Amogh Paragi Software Services, Pune. 814 955 2343', margin + 10, y + 30);
     
-    // Right side - company signature
+    // Right side
     doc.text('E. & O.E.', margin + contentWidth - 50, y, { align: 'right' });
-    doc.text('Thanking You,', margin + contentWidth - 50, y + 10, { align: 'right' });
-    doc.text('For, HARDIK CANVASING, AHMEDABAD', margin + contentWidth - 50, y + 20, { align: 'right' });
+    doc.text('Thanking You,', margin + contentWidth - 50, y + 15, { align: 'right' });
+    doc.text('For, HARDIK CANVASING, AHMEDABAD', margin + contentWidth - 50, y + 30, { align: 'right' });
     
-    // Bottom center
-    doc.text('This is computer generated document and hence no signature required', margin, y + 35, { align: 'center', width: contentWidth });
-
-    // Bottom grey bar - same color as top
-    doc.rect(0, pageHeight - 60, pageWidth, 60).fill('#F0F0F0');
+    // Bottom right
+    doc.text('This is computer generated document and hence no signature required', margin + contentWidth - 50, y + 45, { align: 'right' });
 
     doc.end();
   } catch (error) {
