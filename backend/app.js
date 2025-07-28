@@ -17,6 +17,15 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Root endpoint for testing
+app.get('/', (req, res) => {
+  res.json({
+    status: 'OK',
+    message: 'Hardik Canvasing API is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Health check endpoint for Railway
 app.get('/api/health', (req, res) => {
   res.json({ 
