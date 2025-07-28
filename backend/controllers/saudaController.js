@@ -332,7 +332,7 @@ const generateSaudaNotePDF = async (req, res) => {
     let seller, buyer;
     if (sauda.transaction_type === 'sell') {
       seller = {
-        name: 'SHREE GOODLUCK OIL AND COTTON INDUSTRIES, GUJRAT',
+        name: 'HARDIK CANVASING, AHMEDABAD',
         gstin: company.gstin,
       };
       buyer = {
@@ -341,7 +341,7 @@ const generateSaudaNotePDF = async (req, res) => {
       };
     } else {
       buyer = {
-        name: 'SHREE GOODLUCK OIL AND COTTON INDUSTRIES, GUJRAT',
+        name: 'HARDIK CANVASING, AHMEDABAD',
         gstin: company.gstin,
       };
       seller = {
