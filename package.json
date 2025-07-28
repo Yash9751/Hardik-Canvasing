@@ -1,0 +1,18 @@
+{
+  "name": "hardik-canvasing",
+  "version": "1.0.0",
+  "description": "Hardik Canvasing Trading Application",
+  "main": "backend/app.js",
+  "scripts": {
+    "start": "cd backend && npm install && node app.js",
+    "dev": "cd backend && npm run dev",
+    "build": "cd backend && npm install",
+    "postinstall": "cd backend && npm install"
+  },
+  "keywords": ["trading", "canvasing", "hardik"],
+  "author": "Hardik Canvasing",
+  "license": "ISC",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+} 
