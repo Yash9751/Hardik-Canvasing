@@ -26,6 +26,56 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Database test endpoint
+app.get('/api/test-db', async (req, res) => {
+  try {
+    const pool = require('./db');
+    const result = await pool.query('SELECT NOW() as current_time, version() as postgres_version');
+    res.json({
+      status: 'OK',
+      message: 'Database connection successful',
+      data: result.rows[0],
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Database test error:', error);
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Database connection failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Test tables endpoint
+app.get('/api/test-tables', async (req, res) => {
+  try {
+    const pool = require('./db');
+    const result = await pool.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public'
+      ORDER BY table_name
+    `);
+    res.json({
+      status: 'OK',
+      message: 'Tables found',
+      tables: result.rows.map(row => row.table_name),
+      count: result.rows.length,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Tables test error:', error);
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Failed to check tables',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/parties', require('./routes/partiesRoutes'));
