@@ -467,7 +467,7 @@ const exportPDF = async (req, res) => {
         
         <div class="footer">
           <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
-          <p>Good Luck Traders - P&L Report</p>
+          <p>Hardik Canvasing - P&L Report</p>
         </div>
       </body>
       </html>
