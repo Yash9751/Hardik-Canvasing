@@ -444,23 +444,6 @@ const generateSaudaNotePDF = async (req, res) => {
       y += 25;
     });
 
-    // Footer section
-    y = pageHeight - 120;
-    doc.fontSize(10).font('Helvetica');
-    
-    // Left side - fixed positioning to prevent overlapping
-    doc.text(`GST# Seller: ${seller.gstin}`, margin + 10, y);
-    doc.text(`Buyer: ${buyer.gstin}`, margin + 10, y + 15);
-    doc.text('Amogh Paragi Software Services, Pune. 814 955 2343', margin + 10, y + 30);
-    
-    // Right side
-    doc.text('E. & O.E.', margin + contentWidth - 50, y, { align: 'right' });
-    doc.text('Thanking You,', margin + contentWidth - 50, y + 15, { align: 'right' });
-    doc.text('For, HARDIK CANVASING, AHMEDABAD', margin + contentWidth - 50, y + 30, { align: 'right' });
-    
-    // Bottom right
-    doc.text('This is computer generated document and hence no signature required', margin + contentWidth - 50, y + 45, { align: 'right' });
-
     doc.end();
   } catch (error) {
     console.error('Error generating Sauda Note PDF:', error);
