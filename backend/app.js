@@ -1,6 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const initializeDatabase = require('./init-database');
+
 const app = express();
 
 const PORT = process.env.PORT || 5001;
@@ -41,6 +43,21 @@ app.use('/api/plusminus', require('./routes/plusMinusRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/vendors', require('./routes/vendorsRoutes'));
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Initialize database and start server
+const startServer = async () => {
+  try {
+    // Initialize database tables
+    await initializeDatabase();
+    
+    // Start the server
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
