@@ -141,6 +141,48 @@ app.get('/api/execute-sql', async (req, res) => {
   }
 });
 
+// Test schema file reading
+app.get('/api/test-schema', (req, res) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const schemaPath = path.join(__dirname, 'schema.sql');
+    
+    if (!fs.existsSync(schemaPath)) {
+      return res.status(404).json({
+        status: 'ERROR',
+        message: 'Schema file not found',
+        path: schemaPath,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    const schema = fs.readFileSync(schemaPath, 'utf8');
+    const statements = schema
+      .split(';')
+      .map(statement => statement.trim())
+      .filter(statement => statement.length > 0 && !statement.startsWith('--'));
+    
+    res.json({
+      status: 'OK',
+      message: 'Schema file read successfully',
+      path: schemaPath,
+      fileSize: schema.length,
+      statementCount: statements.length,
+      firstStatement: statements[0] ? statements[0].substring(0, 100) + '...' : 'No statements found',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Schema test error:', error);
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Failed to read schema file',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/parties', require('./routes/partiesRoutes'));
