@@ -106,6 +106,41 @@ app.get('/api/init-db', async (req, res) => {
   }
 });
 
+// Simple SQL execution endpoint for debugging
+app.get('/api/execute-sql', async (req, res) => {
+  try {
+    const pool = require('./db');
+    const { sql } = req.query;
+    
+    if (!sql) {
+      return res.status(400).json({
+        status: 'ERROR',
+        message: 'SQL query parameter is required',
+        example: '/api/execute-sql?sql=CREATE TABLE test (id SERIAL PRIMARY KEY)'
+      });
+    }
+    
+    console.log('Executing SQL:', sql);
+    const result = await pool.query(sql);
+    
+    res.json({
+      status: 'OK',
+      message: 'SQL executed successfully',
+      result: result.rows,
+      rowCount: result.rowCount,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('SQL execution error:', error);
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'SQL execution failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/parties', require('./routes/partiesRoutes'));
@@ -131,17 +166,23 @@ const startServer = async () => {
     console.log('Database host:', process.env.DB_HOST || 'localhost');
     console.log('Database name:', process.env.DB_NAME || 'goodluck_tracker');
     
-    // Initialize database tables
-    console.log('Initializing database tables...');
-    await initializeDatabase();
-    console.log('Database initialization completed successfully');
-    
-    // Start the server
+    // Start the server first
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log('Server is ready to accept requests');
     });
+    
+    // Try to initialize database tables (but don't fail if it doesn't work)
+    try {
+      console.log('Attempting to initialize database tables...');
+      await initializeDatabase();
+      console.log('Database initialization completed successfully');
+    } catch (dbError) {
+      console.error('Database initialization failed, but server will continue:', dbError.message);
+      console.log('You can manually initialize the database using /api/init-db endpoint');
+    }
+    
   } catch (error) {
     console.error('Failed to start server:', error);
     console.error('Error details:', error.message);
