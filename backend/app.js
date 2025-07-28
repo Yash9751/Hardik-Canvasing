@@ -21,7 +21,7 @@ app.use(express.json());
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
-    message: 'Hardik Canvasing API is running',
+    message: 'Hardik Canvasing API is running - Debug version',
     timestamp: new Date().toISOString()
   });
 });
