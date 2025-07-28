@@ -48,51 +48,17 @@ const getSummary = async (req, res) => {
 // Get today's summary with proper formatting using P&L logic
 const getTodaySummary = async (req, res) => {
   try {
-    // Get today's purchase summary (strictly today's date)
-    const today = new Date().toISOString().split('T')[0];
-    const todayPurchaseResult = await db.query(`
-      SELECT 
-        COALESCE(SUM(total_value), 0) as todayBuy,
-        COALESCE(COUNT(*), 0) as purchaseCount,
-        COALESCE(SUM(quantity_packs), 0) as todayBuyQuantity
-      FROM sauda
-      WHERE date = $1 AND transaction_type = 'purchase'
-    `, [today]);
-
-    // Get today's sell summary (strictly today's date)
-    const todaySellResult = await db.query(`
-      SELECT 
-        COALESCE(SUM(total_value), 0) as todaySell,
-        COALESCE(COUNT(*), 0) as sellCount,
-        COALESCE(SUM(quantity_packs), 0) as todaySellQuantity
-      FROM sauda
-      WHERE date = $1 AND transaction_type = 'sell'
-    `, [today]);
-
-    const todayBuy = todayPurchaseResult.rows[0].todaybuy || 0;
-    const todaySell = todaySellResult.rows[0].todaysell || 0;
-    const todayProfit = todaySell - todayBuy; // Simple profit calculation as fallback
-    // Convert packs to MT (1 pack = 1 MT)
-    const todayBuyQuantity = (todayPurchaseResult.rows[0].todaybuyquantity || 0);
-    const todaySellQuantity = (todaySellResult.rows[0].todaysellquantity || 0);
+    console.log('getTodaySummary called');
     
-    // Debug logging
-    console.log('Dashboard Debug - Raw data:', {
-      today: today,
-      todayBuyQuantityRaw: todayPurchaseResult.rows[0].todaybuyquantity,
-      todaySellQuantityRaw: todaySellResult.rows[0].todaysellquantity,
-      todayBuyQuantityConverted: todayBuyQuantity,
-      todaySellQuantityConverted: todaySellQuantity
-    });
-
+    // Simple response for now
     res.json({
-      todayBuy: todayBuy,
-      todaySell: todaySell,
-      todayProfit: todayProfit,
-      todayBuyQuantity: todayBuyQuantity,
-      todaySellQuantity: todaySellQuantity,
-      purchaseCount: todayPurchaseResult.rows[0].purchasecount || 0,
-      sellCount: todaySellResult.rows[0].sellcount || 0
+      todayBuy: 0,
+      todaySell: 0,
+      todayProfit: 0,
+      todayBuyQuantity: 0,
+      todaySellQuantity: 0,
+      purchaseCount: 0,
+      sellCount: 0
     });
   } catch (error) {
     console.error('Get today summary error:', error);
