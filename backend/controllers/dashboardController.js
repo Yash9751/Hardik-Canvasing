@@ -69,48 +69,16 @@ const getTodaySummary = async (req, res) => {
       WHERE date = $1 AND transaction_type = 'sell'
     `, [today]);
 
-    // Get the effective date (today or latest available date)
-    const effectiveDateResult = await db.query(`
-      SELECT COALESCE(MAX(date), CURRENT_DATE) as effective_date
-      FROM sauda 
-      WHERE date <= CURRENT_DATE
-    `);
-    const effectiveDate = effectiveDateResult.rows[0].effective_date;
-
-    // Check if P&L data exists for the effective date, if not generate it
-    const todayPLCheck = await db.query(`
-      SELECT COUNT(*) as count
-      FROM plus_minus
-      WHERE date = $1
-    `, [effectiveDate]);
-
-    if (todayPLCheck.rows[0].count == 0) {
-      console.log('No P&L data found for effective date - generating automatically');
-      // Import the plus minus controller to use its helper function
-      const plusMinusController = require('./plusMinusController');
-      await plusMinusController.generatePlusMinusForDate(effectiveDate.toISOString().split('T')[0]);
-    }
-
-    // Get P&L from plus_minus table for the effective date
-    const todayPLResult = await db.query(`
-      SELECT 
-        COALESCE(SUM(buy_total), 0) as totalBuy,
-        COALESCE(SUM(sell_total), 0) as totalSell,
-        COALESCE(SUM(profit), 0) as totalProfit
-      FROM plus_minus
-      WHERE date = $1
-    `, [effectiveDate]);
-
     const todayBuy = todayPurchaseResult.rows[0].todaybuy || 0;
     const todaySell = todaySellResult.rows[0].todaysell || 0;
-    const todayProfit = todayPLResult.rows[0].totalprofit || 0; // Use P&L profit instead of simple difference
+    const todayProfit = todaySell - todayBuy; // Simple profit calculation as fallback
     // Convert packs to MT (1 pack = 1 MT)
     const todayBuyQuantity = (todayPurchaseResult.rows[0].todaybuyquantity || 0);
     const todaySellQuantity = (todaySellResult.rows[0].todaysellquantity || 0);
     
     // Debug logging
     console.log('Dashboard Debug - Raw data:', {
-      effectiveDate: effectiveDate,
+      today: today,
       todayBuyQuantityRaw: todayPurchaseResult.rows[0].todaybuyquantity,
       todaySellQuantityRaw: todaySellResult.rows[0].todaysellquantity,
       todayBuyQuantityConverted: todayBuyQuantity,
