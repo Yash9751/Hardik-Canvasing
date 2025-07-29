@@ -267,6 +267,7 @@ app.use('/api/reports', require('./routes/reportsRoutes'));
 app.use('/api/plusminus', require('./routes/plusMinusRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/vendors', require('./routes/vendorsRoutes'));
+app.use('/api/company-profile', require('./routes/companyProfileRoutes'));
 
 // Initialize database and start server
 const startServer = async () => {
