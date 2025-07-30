@@ -331,7 +331,7 @@ const generateSaudaNotePDF = async (req, res) => {
       gst_number: '24ABMPT3200E1Z0',
       mobile_number: '9825067157',
       whatsapp_number: '9825067157',
-      
+      phone_number: '(02767) 256762',
       email: 'hcunjha2018@gmail.com'
     };
 
@@ -404,21 +404,21 @@ const generateSaudaNotePDF = async (req, res) => {
     // Contact information - center aligned with proper spacing
     doc.fontSize(10);
     doc.text(`Phone: ${company.phone_number || '(02767) 256762'}`, margin, 95, { align: 'center', width: contentWidth });
-    doc.text(`Mobile: ${company.mobile_number || '9824711157'}`, margin, 110, { align: 'center', width: contentWidth });
-    doc.text(`e-Mail Id: ${company.email || 'hcunjha2018@gmail.com'}`, margin, 125, { align: 'center', width: contentWidth });
+    doc.text(`Mobile: ${company.mobile_number || '9824711157'}`, margin, 115, { align: 'center', width: contentWidth });
+    doc.text(`e-Mail Id: ${company.email || 'hcunjha2018@gmail.com'}`, margin, 135, { align: 'center', width: contentWidth });
 
     // Black bar with CONTRACT CONFIRMATION title
-    doc.rect(margin, 145, contentWidth, 25).fill('#000000');
+    doc.rect(margin, 155, contentWidth, 25).fill('#000000');
     doc.fontSize(16).font('Helvetica-Bold').fillColor('#FFFFFF');
-    doc.text('CONTRACT CONFIRMATION', margin, 155, { align: 'center', width: contentWidth });
+    doc.text('CONTRACT CONFIRMATION', margin, 165, { align: 'center', width: contentWidth });
     doc.fillColor('#000000'); // Reset to black for rest of document
     
     // Introductory paragraph
     doc.fontSize(10).font('Helvetica').fillColor('#000000');
-    doc.text('We hereby inform you that, this contract sale / purchase business was concluded today over the telephonic conversation for below commidity.', margin, 185, { width: contentWidth });
+    doc.text('We hereby inform you that, this contract sale / purchase business was concluded today over the telephonic conversation for below commidity.', margin, 195, { width: contentWidth });
 
     // Contract Details - Key-value pairs format
-    let y = 215;
+    let y = 225;
     const keyX = margin + 10;
     const valueX = margin + 180; // Increased spacing to prevent overlap
     const lineHeight = 22; // Increased line height for better spacing
@@ -511,27 +511,25 @@ const generateSaudaNotePDF = async (req, res) => {
       y += 18; // Increased spacing between terms
     });
     
-    // Footer section with background
+    // Footer section
     y += 20;
-    
-    // Footer background rectangle
-    doc.rect(margin, y - 5, contentWidth, 50).fill('#F5F5F5'); // Light gray background
     
     // Left side - GST details
     doc.fontSize(8).font('Helvetica');
-    doc.text(`GST# Seller: ${seller.gstin || 'N/A'}, Buyer: ${buyer.gstin || 'N/A'}`, margin + 10, y + 5);
-    doc.text('SarthiHub Tech sofware services, Ahmedabad. 704 374 0396', margin + 10, y + 20);
+    doc.text(`GST# Seller: ${seller.gstin || 'N/A'}, Buyer: ${buyer.gstin || 'N/A'}`, margin, y);
+    y += 15;
+    doc.text('SarthiHub Tech sofware services, Ahmedabad. 704 374 0396', margin, y);
     
     // Right side - Company signature (adjusted Y position to prevent overlap)
-    const footerY = y + 5; // Use separate variable for right side
+    const footerY = y - 15; // Use separate variable for right side
     doc.fontSize(8).font('Helvetica');
-    doc.text('E. & O.E.', margin + contentWidth - 110, footerY, { width: 100, align: 'right' });
-    doc.text('Thanking You,', margin + contentWidth - 110, footerY + 15, { width: 100, align: 'right' });
+    doc.text('E. & O.E.', margin + contentWidth - 100, footerY, { width: 100, align: 'right' });
+    doc.text('Thanking You,', margin + contentWidth - 100, footerY + 15, { width: 100, align: 'right' });
     doc.fontSize(10).font('Helvetica-Bold');
-    doc.text(`For, ${company.company_name || 'HARDIK CANVASSING'}, ${company.city || 'AHMEDABAD'}`, margin + contentWidth - 210, footerY + 30, { width: 200, align: 'right' });
+    doc.text(`For, ${company.company_name || 'HARDIK CANVASSING'}, ${company.city || 'AHMEDABAD'}`, margin + contentWidth - 200, footerY + 30, { width: 200, align: 'right' });
     
     // Bottom note
-    y += 60;
+    y += 30;
     doc.fontSize(8).font('Helvetica');
     doc.text('This is computer generated document and hence no signature required', margin, y, { align: 'center', width: contentWidth });
 
