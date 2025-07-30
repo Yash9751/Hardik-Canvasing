@@ -434,7 +434,9 @@ const generateSaudaNotePDF = async (req, res) => {
     };
     
     // Contract details in key-value format with aligned colons
-    drawKeyValue('CONTRACT NO', sauda.sauda_no || 'N/A', y);
+    // Format contract number: remove "20" prefix from year (e.g., "202526/0003" -> "2526/0003")
+    const contractNumber = sauda.sauda_no ? sauda.sauda_no.replace(/^20/, '') : 'N/A';
+    drawKeyValue('CONTRACT NO', contractNumber, y);
     
     y += lineHeight;
     drawKeyValue('CONTRACT DATE', sauda.date ? new Date(sauda.date).toLocaleDateString('en-GB') : 'N/A', y);
