@@ -331,7 +331,7 @@ const generateSaudaNotePDF = async (req, res) => {
       gst_number: '24ABMPT3200E1Z0',
       mobile_number: '9825067157',
       whatsapp_number: '9825067157',
-      phone_number: '(02767) 256762',
+     
       email: 'hcunjha2018@gmail.com'
     };
 
@@ -403,7 +403,7 @@ const generateSaudaNotePDF = async (req, res) => {
     
     // Contact information - center aligned with proper spacing
     doc.fontSize(10);
-    doc.text(`Phone: ${company.phone_number || '(02767) 256762'}`, margin, 95, { align: 'center', width: contentWidth });
+    
     doc.text(`Mobile: ${company.mobile_number || '9824711157'}`, margin, 115, { align: 'center', width: contentWidth });
     doc.text(`e-Mail Id: ${company.email || 'hcunjha2018@gmail.com'}`, margin, 135, { align: 'center', width: contentWidth });
 
