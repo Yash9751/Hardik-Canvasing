@@ -401,23 +401,24 @@ const generateSaudaNotePDF = async (req, res) => {
     const fullAddress = `${company.address || 'A 1503, Privilon, Ambli BRT Road, Iskon Crossroads,'} ${company.city || 'Ahmedabad'}, ${company.state || 'Gujarat'} - ${company.pincode || '380054'}, India`;
     doc.text(fullAddress, margin, 75, { align: 'center', width: contentWidth });
     
-    // Contact information - center aligned
+    // Contact information - center aligned with proper spacing
     doc.fontSize(10);
-    doc.text(`Phone: ${company.phone_number || '(02767) 256762'} Mobile: ${company.mobile_number || '9824711157'}`, margin, 95, { align: 'center', width: contentWidth });
-    doc.text(`e-Mail Id: ${company.email || 'same as old one'}`, margin, 110, { align: 'center', width: contentWidth });
+    doc.text(`Phone: ${company.phone_number || '(02767) 256762'}`, margin, 95, { align: 'center', width: contentWidth });
+    doc.text(`Mobile: ${company.mobile_number || '9824711157'}`, margin, 110, { align: 'center', width: contentWidth });
+    doc.text(`e-Mail Id: ${company.email || 'hcunjha2018@gmail.com'}`, margin, 125, { align: 'center', width: contentWidth });
 
     // Black bar with CONTRACT CONFIRMATION title
-    doc.rect(margin, 130, contentWidth, 25).fill('#000000');
+    doc.rect(margin, 145, contentWidth, 25).fill('#000000');
     doc.fontSize(16).font('Helvetica-Bold').fillColor('#FFFFFF');
-    doc.text('CONTRACT CONFIRMATION', margin, 140, { align: 'center', width: contentWidth });
+    doc.text('CONTRACT CONFIRMATION', margin, 155, { align: 'center', width: contentWidth });
     doc.fillColor('#000000'); // Reset to black for rest of document
     
     // Introductory paragraph
     doc.fontSize(10).font('Helvetica').fillColor('#000000');
-    doc.text('We hereby inform you that, this contract sale / purchase business was concluded today over the telephonic conversation for below commidity.', margin, 170, { width: contentWidth });
+    doc.text('We hereby inform you that, this contract sale / purchase business was concluded today over the telephonic conversation for below commidity.', margin, 185, { width: contentWidth });
 
     // Contract Details - Key-value pairs format
-    let y = 200;
+    let y = 215;
     const keyX = margin + 10;
     const valueX = margin + 180; // Increased spacing to prevent overlap
     const lineHeight = 22; // Increased line height for better spacing
@@ -499,13 +500,9 @@ const generateSaudaNotePDF = async (req, res) => {
     // Other terms as bullet points
     const terms = [
       'Buyer must be lifting all quantity on or before above mentioned delivery period, if buyer don\'t lift then seller party have right to take decision on buyer and it should be acceptable by buyer.',
-      'Custom duty, levies, surcharge, taxes or additional duty will be on Seller\'s A/c. The rate will be fixed, custom duty paid and any charges in tarrif value.',
-      'Send duly signed copy of this contract as an acceptance, failing which, it shall be deemed as if the same has been accepted.',
-      'Kindly make note on this contract and in case of any discrepancy, kindly let us know immediately.',
-      'Once the delivery has been affected no complaints whatever shall be entertain.',
-      'Payment by advance D.D. Pay Slip, RTGS, NEFT or Fund Transfer.',
-      'On sending the goods to purchaser a copy of the bill be sent to us.',
-      'We will not be responsible if any profit / loss after deal.',
+      '',
+      'It is very much clear from above that the contract is between Seller & Purchaser are they themselves are responsible for any breach of terms & conditions settled between them. We stand ony as witness.',
+      '',
       'Subject To Ahmedabad Jurisdiction.'
     ];
     
@@ -521,7 +518,7 @@ const generateSaudaNotePDF = async (req, res) => {
     doc.fontSize(8).font('Helvetica');
     doc.text(`GST# Seller: ${seller.gstin || 'N/A'}, Buyer: ${buyer.gstin || 'N/A'}`, margin, y);
     y += 15;
-    doc.text('Amogh Paragi Software Services, Pune. 814 955 2343', margin, y);
+    doc.text('SarthiHub Tech sofware services, Ahmedabad. 704 374 0396', margin, y);
     
     // Right side - Company signature (adjusted Y position to prevent overlap)
     const footerY = y - 15; // Use separate variable for right side
