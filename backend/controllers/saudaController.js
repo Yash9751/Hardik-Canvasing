@@ -407,21 +407,21 @@ const generateSaudaNotePDF = async (req, res) => {
     // Contact information - center aligned with proper spacing
     doc.fontSize(10);
     
-    doc.text(`Mobile: ${company.mobile_number || '9824711157'}`, margin, 115, { align: 'center', width: contentWidth });
-    doc.text(`e-Mail Id: ${company.email || 'hcunjha2018@gmail.com'}`, margin, 135, { align: 'center', width: contentWidth });
+    doc.text(`Mobile: ${company.mobile_number || '9824711157'}`, margin, 95, { align: 'center', width: contentWidth });
+    doc.text(`e-Mail Id: ${company.email || 'hcunjha2018@gmail.com'}`, margin, 115, { align: 'center', width: contentWidth });
 
     // Black bar with CONTRACT CONFIRMATION title
-    doc.rect(margin, 155, contentWidth, 25).fill('#000000');
+    doc.rect(margin, 135, contentWidth, 25).fill('#000000');
     doc.fontSize(16).font('Helvetica-Bold').fillColor('#FFFFFF');
-    doc.text('CONTRACT CONFIRMATION', margin, 165, { align: 'center', width: contentWidth });
+    doc.text('CONTRACT CONFIRMATION', margin, 145, { align: 'center', width: contentWidth });
     doc.fillColor('#000000'); // Reset to black for rest of document
     
     // Introductory paragraph
     doc.fontSize(10).font('Helvetica').fillColor('#000000');
-    doc.text('We hereby inform you that, this contract sale / purchase business was concluded today over the telephonic conversation for below commidity.', margin, 195, { width: contentWidth });
+    doc.text('We hereby inform you that, this contract sale / purchase business was concluded today over the telephonic conversation for below commidity.', margin, 175, { width: contentWidth });
 
     // Contract Details - Key-value pairs format with aligned colons
-    let y = 225;
+    let y = 205;
     const keyX = margin + 10;
     const colonX = margin + 140; // Fixed position for all colons
     const valueX = margin + 150; // Start values right after colons
