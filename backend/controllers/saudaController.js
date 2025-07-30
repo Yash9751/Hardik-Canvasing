@@ -430,7 +430,12 @@ const generateSaudaNotePDF = async (req, res) => {
     // Helper function to draw aligned key-value pairs
     const drawKeyValue = (key, value, currentY, isName = false) => {
       doc.fontSize(10).font('Helvetica');
-      doc.text(key, keyX, currentY);
+      
+      // Right-align the key to the colon
+      const keyWidth = doc.widthOfString(key);
+      const keyXAligned = colonX - keyWidth - 5; // 5px gap from colon
+      doc.text(key, keyXAligned, currentY);
+      
       doc.text(':', colonX, currentY);
       
       if (isName) {
