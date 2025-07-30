@@ -397,8 +397,8 @@ const generateSaudaNotePDF = async (req, res) => {
     doc.fontSize(12).font('Helvetica').fillColor('#000000');
     doc.text(company.business_type || 'Brokers in Edible Oil, Oilcakes Etc.,', margin, 55, { align: 'center', width: contentWidth });
     
-    // Full address in one line
-    const fullAddress = `${company.address || 'A 1503, Privilon, Ambli BRT Road, Iskon Crossroads,'} ${company.city || 'Ahmedabad'}, ${company.state || 'Gujarat'} - ${company.pincode || '380054'}, India`;
+    // Full address in one line - fixed construction
+    const fullAddress = `${company.address || 'A 1503, Privilon, Ambli BRT Road, Iskon Crossroads,'} ${company.city || 'Ahmedabad'}, ${company.state || 'Gujarat'} ${company.pincode || '380054'}, India`;
     doc.text(fullAddress, margin, 75, { align: 'center', width: contentWidth });
     
     // Contact information - center aligned with proper spacing
@@ -511,25 +511,27 @@ const generateSaudaNotePDF = async (req, res) => {
       y += 18; // Increased spacing between terms
     });
     
-    // Footer section
+    // Footer section with background
     y += 20;
+    
+    // Footer background rectangle
+    doc.rect(margin, y - 5, contentWidth, 50).fill('#F5F5F5'); // Light gray background
     
     // Left side - GST details
     doc.fontSize(8).font('Helvetica');
-    doc.text(`GST# Seller: ${seller.gstin || 'N/A'}, Buyer: ${buyer.gstin || 'N/A'}`, margin, y);
-    y += 15;
-    doc.text('SarthiHub Tech sofware services, Ahmedabad. 704 374 0396', margin, y);
+    doc.text(`GST# Seller: ${seller.gstin || 'N/A'}, Buyer: ${buyer.gstin || 'N/A'}`, margin + 10, y + 5);
+    doc.text('SarthiHub Tech sofware services, Ahmedabad. 704 374 0396', margin + 10, y + 20);
     
     // Right side - Company signature (adjusted Y position to prevent overlap)
-    const footerY = y - 15; // Use separate variable for right side
+    const footerY = y + 5; // Use separate variable for right side
     doc.fontSize(8).font('Helvetica');
-    doc.text('E. & O.E.', margin + contentWidth - 100, footerY, { width: 100, align: 'right' });
-    doc.text('Thanking You,', margin + contentWidth - 100, footerY + 15, { width: 100, align: 'right' });
+    doc.text('E. & O.E.', margin + contentWidth - 110, footerY, { width: 100, align: 'right' });
+    doc.text('Thanking You,', margin + contentWidth - 110, footerY + 15, { width: 100, align: 'right' });
     doc.fontSize(10).font('Helvetica-Bold');
-    doc.text(`For, ${company.company_name || 'HARDIK CANVASSING'}, ${company.city || 'AHMEDABAD'}`, margin + contentWidth - 200, footerY + 30, { width: 200, align: 'right' });
+    doc.text(`For, ${company.company_name || 'HARDIK CANVASSING'}, ${company.city || 'AHMEDABAD'}`, margin + contentWidth - 210, footerY + 30, { width: 200, align: 'right' });
     
     // Bottom note
-    y += 30;
+    y += 60;
     doc.fontSize(8).font('Helvetica');
     doc.text('This is computer generated document and hence no signature required', margin, y, { align: 'center', width: contentWidth });
 
