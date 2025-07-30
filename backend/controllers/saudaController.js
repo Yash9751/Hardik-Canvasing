@@ -410,6 +410,7 @@ const generateSaudaNotePDF = async (req, res) => {
     doc.rect(margin, 130, contentWidth, 25).fill('#000000');
     doc.fontSize(16).font('Helvetica-Bold').fillColor('#FFFFFF');
     doc.text('CONTRACT CONFIRMATION', margin, 140, { align: 'center', width: contentWidth });
+    doc.fillColor('#000000'); // Reset to black for rest of document
     
     // Introductory paragraph
     doc.fontSize(10).font('Helvetica').fillColor('#000000');
@@ -418,8 +419,8 @@ const generateSaudaNotePDF = async (req, res) => {
     // Contract Details - Key-value pairs format
     let y = 200;
     const keyX = margin + 10;
-    const valueX = margin + 150;
-    const lineHeight = 20;
+    const valueX = margin + 180; // Increased spacing to prevent overlap
+    const lineHeight = 22; // Increased line height for better spacing
     
     // Contract details in key-value format
     doc.fontSize(10).font('Helvetica-Bold');
@@ -510,7 +511,7 @@ const generateSaudaNotePDF = async (req, res) => {
     
     terms.forEach((term, index) => {
       doc.text(`* ${term}`, margin + 10, y, { width: contentWidth - 20 });
-      y += 15;
+      y += 18; // Increased spacing between terms
     });
     
     // Footer section
@@ -522,15 +523,13 @@ const generateSaudaNotePDF = async (req, res) => {
     y += 15;
     doc.text('Amogh Paragi Software Services, Pune. 814 955 2343', margin, y);
     
-    // Right side - Company signature
-    y -= 15;
+    // Right side - Company signature (adjusted Y position to prevent overlap)
+    const footerY = y - 15; // Use separate variable for right side
     doc.fontSize(8).font('Helvetica');
-    doc.text('E. & O.E.', margin + contentWidth - 100, y, { width: 100, align: 'right' });
-    y += 15;
-    doc.text('Thanking You,', margin + contentWidth - 100, y, { width: 100, align: 'right' });
-    y += 15;
+    doc.text('E. & O.E.', margin + contentWidth - 100, footerY, { width: 100, align: 'right' });
+    doc.text('Thanking You,', margin + contentWidth - 100, footerY + 15, { width: 100, align: 'right' });
     doc.fontSize(10).font('Helvetica-Bold');
-    doc.text(`For, ${company.company_name || 'HARDIK CANVASSING'}, ${company.city || 'AHMEDABAD'}`, margin + contentWidth - 200, y, { width: 200, align: 'right' });
+    doc.text(`For, ${company.company_name || 'HARDIK CANVASSING'}, ${company.city || 'AHMEDABAD'}`, margin + contentWidth - 200, footerY + 30, { width: 200, align: 'right' });
     
     // Bottom note
     y += 30;
