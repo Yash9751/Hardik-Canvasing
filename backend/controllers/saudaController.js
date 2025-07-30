@@ -392,30 +392,30 @@ const generateSaudaNotePDF = async (req, res) => {
 
     // Header - Company Information (matching reference design)
     doc.fontSize(18).font('Helvetica-Bold').fillColor('#000080'); // Dark blue color
-    doc.text(company.company_name || 'Hardik Canvassing', margin, 20, { align: 'center', width: contentWidth });
+    doc.text(company.company_name || 'Hardik Canvassing', margin, 30, { align: 'center', width: contentWidth });
     
     doc.fontSize(12).font('Helvetica').fillColor('#000000');
-    doc.text(company.address || 'A 1503, Privilon, Ambli BRT Road, Iskon Crossroads,', margin, 45, { align: 'center', width: contentWidth });
+    doc.text(company.address || 'A 1503, Privilon, Ambli BRT Road, Iskon Crossroads,', margin, 55, { align: 'center', width: contentWidth });
     
     // Contact information - left aligned like reference
     doc.fontSize(10);
-    doc.text(`Mail: ${company.email || 'hcunjha2018@gmail.com'}`, margin, 65);
-    doc.text(`Contact (Whatsapp): ${company.whatsapp_number || '9825067157'}`, margin, 80);
-    doc.text(`Phone: ${company.phone_number || '(02767) 256762'}`, margin, 95);
-    doc.text(`Mobile: ${company.mobile_number || '9825067157'}`, margin, 110);
+    doc.text(`Mail: ${company.email || 'hcunjha2018@gmail.com'}`, margin, 80);
+    doc.text(`Contact (Whatsapp): ${company.whatsapp_number || '9825067157'}`, margin, 95);
+    doc.text(`Phone: ${company.phone_number || '(02767) 256762'}`, margin, 110);
+    doc.text(`Mobile: ${company.mobile_number || '9825067157'}`, margin, 125);
 
     // Horizontal line
-    doc.moveTo(margin, 130).lineTo(margin + contentWidth, 130).stroke();
+    doc.moveTo(margin, 145).lineTo(margin + contentWidth, 145).stroke();
     
     // Document Title
     doc.fontSize(16).font('Helvetica-Bold');
-    doc.text('Contract Note', margin, 150, { align: 'center', width: contentWidth });
+    doc.text('Contract Note', margin, 165, { align: 'center', width: contentWidth });
     
     // Horizontal line after title
-    doc.moveTo(margin, 170).lineTo(margin + contentWidth, 170).stroke();
+    doc.moveTo(margin, 185).lineTo(margin + contentWidth, 185).stroke();
 
     // Document Details - Side by side layout like reference
-    let y = 190;
+    let y = 205;
     const leftMargin = margin + 10;
     const rightMargin = margin + contentWidth / 2 + 10;
     
@@ -431,22 +431,22 @@ const generateSaudaNotePDF = async (req, res) => {
     doc.text(sauda.date ? new Date(sauda.date).toLocaleDateString('en-GB') : 'N/A', rightMargin + 80, y);
     
     // Horizontal line
-    y += 25;
+    y += 30;
     doc.moveTo(margin, y).lineTo(margin + contentWidth, y).stroke();
     
     // General Note
-    y += 15;
+    y += 20;
     doc.fontSize(10).font('Helvetica');
     doc.text('All Details like Party Name & Address are verified by GSTIN. So please use that for billing purpose.', margin, y, { align: 'center', width: contentWidth });
     
     // Thick horizontal line
-    y += 20;
+    y += 25;
     doc.lineWidth(2);
     doc.moveTo(margin, y).lineTo(margin + contentWidth, y).stroke();
     doc.lineWidth(1);
 
     // Seller and Buyer Information - Side by side like reference
-    y += 20;
+    y += 30;
     const sellerX = margin + 10;
     const buyerX = margin + contentWidth / 2 + 10;
     const sellerWidth = contentWidth / 2 - 20;
@@ -455,71 +455,71 @@ const generateSaudaNotePDF = async (req, res) => {
     // Seller Information (Left Column)
     doc.fontSize(11).font('Helvetica-Bold').fillColor('#000080');
     doc.text(`Seller : ${seller.name}`, sellerX, y);
-    y += 15;
+    y += 18;
     
     doc.fontSize(10).font('Helvetica').fillColor('#000000');
     doc.text(`Billing Add : ${seller.address}`, sellerX, y);
-    y += 12;
+    y += 15;
     doc.text(`City : ${seller.city}`, sellerX, y);
-    y += 12;
+    y += 15;
     doc.text(`State : ${seller.state}`, sellerX, y);
-    y += 12;
+    y += 15;
     doc.text(`Pincode : ${seller.pincode}`, sellerX, y);
-    y += 12;
+    y += 15;
     doc.fontSize(10).font('Helvetica-Bold');
     doc.text(`GSTIN : ${seller.gstin}`, sellerX, y);
     
     // Reset Y for buyer column
-    y -= 60; // Go back up to align with seller
+    y -= 75; // Go back up to align with seller
     
     // Buyer Information (Right Column)
     doc.fontSize(11).font('Helvetica-Bold').fillColor('#000080');
     doc.text(`Buyer : ${buyer.name}`, buyerX, y);
-    y += 15;
+    y += 18;
     
     doc.fontSize(10).font('Helvetica').fillColor('#000000');
     doc.text(`Billing Add : ${buyer.address}`, buyerX, y);
-    y += 12;
+    y += 15;
     doc.text(`City : ${buyer.city}`, buyerX, y);
-    y += 12;
+    y += 15;
     doc.text(`State : ${buyer.state}`, buyerX, y);
-    y += 12;
+    y += 15;
     doc.text(`Pincode : ${buyer.pincode}`, buyerX, y);
-    y += 12;
+    y += 15;
     doc.fontSize(10).font('Helvetica-Bold');
     doc.text(`GSTIN : ${buyer.gstin}`, buyerX, y);
     
     // Horizontal line
-    y += 20;
+    y += 25;
     doc.moveTo(margin, y).lineTo(margin + contentWidth, y).stroke();
 
     // Transaction Details - Two columns like reference
-    y += 20;
+    y += 30;
     
     // Left column
     doc.fontSize(10).font('Helvetica');
     doc.text(`Delivery Condition : ${sauda.delivery_condition || 'Fri-Sat'}`, sellerX, y);
-    y += 12;
+    y += 15;
     doc.text(`Payment Condition : ${sauda.payment_condition || 'Advance'}`, sellerX, y);
-    y += 12;
+    y += 15;
     doc.text(`Tax Type : + GST`, sellerX, y);
-    y += 12;
+    y += 15;
     doc.text(`Delivery Type : -Motability Delivery`, sellerX, y);
     
     // Reset Y for right column
-    y -= 36;
+    y -= 45;
     
     // Right column
     doc.text(`Narration : ${parseFloat(sauda.quantity_packs) || 0} to ${parseFloat(sauda.quantity_packs) || 0} MT`, buyerX, y);
-    y += 12;
+    y += 15;
     doc.text(`Delivery Add. : `, buyerX, y);
     
     // Horizontal line
-    y += 20;
+    y += 25;
     doc.moveTo(margin, y).lineTo(margin + contentWidth, y).stroke();
 
     // Item Table - Matching reference design
-    y += 20;
+    y += 30;
     
     // Table headers with proper column widths
     const tableY = y;
@@ -546,35 +546,35 @@ const generateSaudaNotePDF = async (req, res) => {
 
     // Item row
     y += 30;
-    doc.rect(tableX, y, contentWidth, 35).stroke(); // Taller row for HSN code
+    doc.rect(tableX, y, contentWidth, 40).stroke(); // Taller row for HSN code
     
     currentX = tableX;
     doc.fontSize(9).font('Helvetica');
-    doc.text('1', currentX + 5, y + 8);
+    doc.text('1', currentX + 5, y + 10);
     currentX += colWidths[0];
     
     // Item name and HSN code
-    doc.text(sauda.item_name || 'N/A', currentX + 5, y + 8);
+    doc.text(sauda.item_name || 'N/A', currentX + 5, y + 10);
     doc.fontSize(8);
-    doc.text(`HSN Code : ${sauda.hsn_code || 'N/A'}`, currentX + 5, y + 20);
+    doc.text(`HSN Code : ${sauda.hsn_code || 'N/A'}`, currentX + 5, y + 25);
     doc.fontSize(9);
     currentX += colWidths[1];
     
-    doc.text((parseFloat(sauda.quantity_packs) || 0).toFixed(2), currentX + 5, y + 8);
+    doc.text((parseFloat(sauda.quantity_packs) || 0).toFixed(2), currentX + 5, y + 10);
     currentX += colWidths[2];
-    doc.text('1000.00', currentX + 5, y + 8);
+    doc.text('1000.00', currentX + 5, y + 10);
     currentX += colWidths[3];
-    doc.text(((parseFloat(sauda.quantity_packs) || 0) * 1000).toFixed(2), currentX + 5, y + 8);
+    doc.text(((parseFloat(sauda.quantity_packs) || 0) * 1000).toFixed(2), currentX + 5, y + 10);
     currentX += colWidths[4];
     
     // Rate with "Per 10 KGs" on next line
-    doc.text((parseFloat(sauda.rate_per_10kg) || 0).toFixed(3), currentX + 5, y + 8);
+    doc.text((parseFloat(sauda.rate_per_10kg) || 0).toFixed(3), currentX + 5, y + 10);
     doc.fontSize(8);
-    doc.text('(Per 10 KGs)', currentX + 5, y + 20);
+    doc.text('(Per 10 KGs)', currentX + 5, y + 25);
     doc.fontSize(9);
 
     // Total row
-    y += 40;
+    y += 45;
     doc.rect(tableX, y, contentWidth, 25).stroke();
     
     currentX = tableX + colWidths[0];
@@ -590,20 +590,20 @@ const generateSaudaNotePDF = async (req, res) => {
     // Footer Note
     y += 30;
     doc.moveTo(margin, y).lineTo(margin + contentWidth, y).stroke();
-    y += 15;
+    y += 20;
     doc.fontSize(9).font('Helvetica');
     doc.text('Note : It is very much clear from above that the contract is between Seller & Purchaser are they themselves are responsible for any breach of terms & conditions settled between them. We stand only as witness.', margin, y, { width: contentWidth });
 
     // Signature section - Right aligned like reference
-    y += 40;
+    y += 50;
     doc.fontSize(10).font('Helvetica-Bold').fillColor('#000080');
     doc.text(`For, ${company.company_name}`, margin + contentWidth - 200, y, { width: 200, align: 'right' });
     
-    y += 30;
+    y += 35;
     // Space for signature
     doc.moveTo(margin + contentWidth - 150, y).lineTo(margin + contentWidth - 50, y).stroke();
     
-    y += 20;
+    y += 25;
     doc.text('Proprietor', margin + contentWidth - 200, y, { width: 200, align: 'right' });
 
     doc.end();
