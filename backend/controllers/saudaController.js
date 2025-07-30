@@ -457,7 +457,7 @@ const generateSaudaNotePDF = async (req, res) => {
     doc.text('Transaction Details:', leftMargin, y);
     y += 20;
 
-    addDetailRow('Narration:', `${sauda.quantity_packs || 0} to ${sauda.quantity_packs || 0} MT`);
+    addDetailRow('Narration:', `${parseFloat(sauda.quantity_packs) || 0} to ${parseFloat(sauda.quantity_packs) || 0} MT`);
     addDetailRow('Delivery Condition:', sauda.delivery_condition || 'Fri-Sat');
     addDetailRow('Payment Condition:', sauda.payment_condition || 'Advance');
     addDetailRow('Tax Type:', '+ GST');
@@ -495,10 +495,10 @@ const generateSaudaNotePDF = async (req, res) => {
     doc.text('1', tableX + 5, y + 8);
     doc.text(sauda.item_name || 'N/A', tableX + 35, y + 8);
     doc.text(sauda.hsn_code || 'N/A', tableX + 35, y + 20);
-    doc.text((sauda.quantity_packs || 0).toFixed(2), tableX + 185, y + 8);
+    doc.text((parseFloat(sauda.quantity_packs) || 0).toFixed(2), tableX + 185, y + 8);
     doc.text('1000.00', tableX + 265, y + 8);
-    doc.text(((sauda.quantity_packs || 0) * 1000).toFixed(2), tableX + 345, y + 8);
-    doc.text(`${(sauda.rate_per_10kg || 0).toFixed(3)} (Per 10 KGs)`, tableX + 425, y + 8);
+    doc.text(((parseFloat(sauda.quantity_packs) || 0) * 1000).toFixed(2), tableX + 345, y + 8);
+    doc.text(`${(parseFloat(sauda.rate_per_10kg) || 0).toFixed(3)} (Per 10 KGs)`, tableX + 425, y + 8);
 
     // Total row
     y += 30;
@@ -506,9 +506,9 @@ const generateSaudaNotePDF = async (req, res) => {
     
     doc.fontSize(9).font('Helvetica-Bold');
     doc.text('Total', tableX + 35, y + 8);
-    doc.text((sauda.quantity_packs || 0).toFixed(2), tableX + 185, y + 8);
+    doc.text((parseFloat(sauda.quantity_packs) || 0).toFixed(2), tableX + 185, y + 8);
     doc.text('', tableX + 265, y + 8);
-    doc.text(((sauda.quantity_packs || 0) * 1000).toFixed(2), tableX + 345, y + 8);
+    doc.text(((parseFloat(sauda.quantity_packs) || 0) * 1000).toFixed(2), tableX + 345, y + 8);
 
     // Footer Note
     y += 50;
@@ -536,6 +536,9 @@ const generateSaudaNotePDF = async (req, res) => {
     // If headers haven't been sent yet, send error response
     if (!res.headersSent) {
       res.status(500).json({ error: 'Failed to generate PDF: ' + error.message });
+    } else {
+      // If headers were already sent, we can't send JSON, so end the response
+      res.end();
     }
   }
 };
