@@ -339,7 +339,7 @@ const generateSaudaNotePDF = async (req, res) => {
     let seller, buyer;
     if (sauda.transaction_type === 'sell') {
       seller = {
-        name: company.company_name,
+        name: 'Shree Goodluck Oil & Cotton Ind',
         address: company.address,
         city: company.city,
         state: company.state,
@@ -356,7 +356,7 @@ const generateSaudaNotePDF = async (req, res) => {
       };
     } else {
       buyer = {
-        name: company.company_name,
+        name: 'Shree Goodluck Oil & Cotton Ind',
         address: company.address,
         city: company.city,
         state: company.state,
@@ -392,7 +392,7 @@ const generateSaudaNotePDF = async (req, res) => {
 
     // Header - Company Information (matching CONTRACT CONFIRMATION format)
     doc.fontSize(18).font('Helvetica-Bold').fillColor('#000000');
-    doc.text(company.company_name || 'HARDIK CANVASSING', margin, 30, { align: 'center', width: contentWidth });
+    doc.text(company.company_name || 'Hardik Canvassing', margin, 30, { align: 'center', width: contentWidth });
     
     doc.fontSize(12).font('Helvetica').fillColor('#000000');
     doc.text(company.business_type || 'Brokers in Edible Oil, Oilcakes Etc.,', margin, 55, { align: 'center', width: contentWidth });
@@ -440,10 +440,10 @@ const generateSaudaNotePDF = async (req, res) => {
     drawKeyValue('CONTRACT DATE', sauda.date ? new Date(sauda.date).toLocaleDateString('en-GB') : 'N/A', y);
     
     y += lineHeight;
-    drawKeyValue('SELLER NAME', seller.name, y);
+    drawKeyValue('SELLER NAME', `${seller.name} (${seller.city})`, y);
     
     y += lineHeight;
-    drawKeyValue('BUYER NAME', buyer.name, y);
+    drawKeyValue('BUYER NAME', `${buyer.name} (${buyer.city})`, y);
     
     y += lineHeight;
     drawKeyValue('MATERIAL', sauda.item_name || 'N/A', y);
@@ -455,7 +455,7 @@ const generateSaudaNotePDF = async (req, res) => {
     drawKeyValue('RATE', `${(parseFloat(sauda.rate_per_10kg) || 0).toFixed(2)} PER 10 KG + IGST, (${sauda.ex_plant_name || 'Ex Plant'})`, y);
     
     y += lineHeight;
-    drawKeyValue('DELIVERY PERIOD', sauda.loading_due_date ? new Date(sauda.loading_due_date).toLocaleDateString('en-GB') : 'N/A', y);
+    drawKeyValue('DELIVERY PERIOD', sauda.delivery_condition || 'N/A', y);
     
     y += lineHeight;
     drawKeyValue('PAYMENT', sauda.payment_condition || 'Advance', y);
@@ -511,8 +511,8 @@ const generateSaudaNotePDF = async (req, res) => {
     doc.text(`For, ${company.company_name || 'HARDIK CANVASSING'}, ${company.city || 'AHMEDABAD'}`, margin + contentWidth - 200, footerY + 30, { width: 200, align: 'right' });
     
     // Bottom note
-    y += 30;
-    doc.fontSize(8).font('Helvetica');
+    y += 50;
+    doc.fontSize(5).font('Helvetica');
     doc.text('This is computer generated document and hence no signature required', margin, y, { align: 'center', width: contentWidth });
 
     doc.end();
