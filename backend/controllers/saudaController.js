@@ -331,7 +331,7 @@ const generateSaudaNotePDF = async (req, res) => {
       gst_number: '24ABMPT3200E1Z0',
       mobile_number: '9825067157',
       whatsapp_number: '9825067157',
-      phone_number: '(02767) 256762',
+      
       email: 'hcunjha2018@gmail.com'
     };
 
@@ -424,65 +424,65 @@ const generateSaudaNotePDF = async (req, res) => {
     const lineHeight = 22; // Increased line height for better spacing
     
     // Contract details in key-value format
-    doc.fontSize(10).font('Helvetica-Bold');
+    doc.fontSize(10).font('Helvetica');
     doc.text('CONTRACT NO.:', keyX, y);
-    doc.font('Helvetica');
+    doc.font('Helvetica-Bold');
     doc.text(sauda.sauda_no || 'N/A', valueX, y);
     
     y += lineHeight;
-    doc.fontSize(10).font('Helvetica-Bold');
+    doc.fontSize(10).font('Helvetica');
     doc.text('CONTRACT DATE:', keyX, y);
-    doc.font('Helvetica');
+    doc.font('Helvetica-Bold');
     doc.text(sauda.date ? new Date(sauda.date).toLocaleDateString('en-GB') : 'N/A', valueX, y);
     
     y += lineHeight;
-    doc.fontSize(10).font('Helvetica-Bold');
+    doc.fontSize(10).font('Helvetica');
     doc.text('SELLER NAME:', keyX, y);
-    doc.font('Helvetica');
+    doc.font('Helvetica-Bold');
     doc.text(seller.name, valueX, y);
     
     y += lineHeight;
-    doc.fontSize(10).font('Helvetica-Bold');
+    doc.fontSize(10).font('Helvetica');
     doc.text('BUYER NAME:', keyX, y);
-    doc.font('Helvetica');
+    doc.font('Helvetica-Bold');
     doc.text(buyer.name, valueX, y);
     
     y += lineHeight;
-    doc.fontSize(10).font('Helvetica-Bold');
+    doc.fontSize(10).font('Helvetica');
     doc.text('MATERIAL:', keyX, y);
-    doc.font('Helvetica');
+    doc.font('Helvetica-Bold');
     doc.text(sauda.item_name || 'N/A', valueX, y);
     
     y += lineHeight;
-    doc.fontSize(10).font('Helvetica-Bold');
+    doc.fontSize(10).font('Helvetica');
     doc.text('QUANTITY:', keyX, y);
-    doc.font('Helvetica');
+    doc.font('Helvetica-Bold');
     doc.text(`${parseFloat(sauda.quantity_packs) || 0} TON`, valueX, y);
     
     y += lineHeight;
-    doc.fontSize(10).font('Helvetica-Bold');
+    doc.fontSize(10).font('Helvetica');
     doc.text('RATE:', keyX, y);
-    doc.font('Helvetica');
+    doc.font('Helvetica-Bold');
     const rateText = `${(parseFloat(sauda.rate_per_10kg) || 0).toFixed(2)} PER 10 KG + IGST, (${sauda.ex_plant_name || 'Ex Plant'})`;
     doc.text(rateText, valueX, y);
     
     y += lineHeight;
-    doc.fontSize(10).font('Helvetica-Bold');
+    doc.fontSize(10).font('Helvetica');
     doc.text('DELIVERY PERIOD:', keyX, y);
-    doc.font('Helvetica');
+    doc.font('Helvetica-Bold');
     const deliveryDate = sauda.loading_due_date ? new Date(sauda.loading_due_date).toLocaleDateString('en-GB') : 'N/A';
     doc.text(deliveryDate, valueX, y);
     
     y += lineHeight;
-    doc.fontSize(10).font('Helvetica-Bold');
+    doc.fontSize(10).font('Helvetica');
     doc.text('PAYMENT:', keyX, y);
-    doc.font('Helvetica');
+    doc.font('Helvetica-Bold');
     doc.text(sauda.payment_condition || 'Advance', valueX, y);
     
     y += lineHeight;
-    doc.fontSize(10).font('Helvetica-Bold');
+    doc.fontSize(10).font('Helvetica');
     doc.text('REMARKS:', keyX, y);
-    doc.font('Helvetica');
+    doc.font('Helvetica-Bold');
     doc.text('FIX DUTY', valueX, y);
 
     // Separator line
