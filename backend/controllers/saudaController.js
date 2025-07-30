@@ -292,9 +292,10 @@ const getNextSaudaNumber = async (req, res) => {
 const generateSaudaNotePDF = async (req, res) => {
   try {
     const { id } = req.params;
-    // Fetch sauda data
+    
+    // Fetch sauda data with all related information
     const result = await db.query(`
-      SELECT s.*, p.party_name, p.city as party_city, p.gst_no as party_gstin,
+      SELECT s.*, p.party_name, p.city as party_city, p.gst_no as party_gstin, p.contact_person, p.mobile_number as party_mobile, p.email as party_email,
              i.item_name, i.hsn_code,
              ep.plant_name as ex_plant_name,
              b.broker_name,
@@ -317,132 +318,215 @@ const generateSaudaNotePDF = async (req, res) => {
     const sauda = result.rows[0];
     console.log('Generating Sauda Note PDF for:', sauda);
 
-    // Company info for Hardik Canvasing
-    const company = {
-      name: 'HARDIK CANVASING',
-      business: 'Brokers in Edible Oil, Oilcakes Etc.,',
-      address: 'A 1503, Privilon, Ambli BRT Road, Iskon Crossroads, Ahmedabad, Gujarat 380054, India',
-      phone: '',
-      mobile: '9824711157',
-      email: 'same as old one', // You can update this with actual email
-      gstin: '24ABMPT3200E1Z0', // Keep your existing GSTIN
+    // Get company profile
+    const companyResult = await db.query('SELECT * FROM company_profile ORDER BY id LIMIT 1');
+    const company = companyResult.rows[0] || {
+      company_name: 'Hardik Canvassing',
+      business_type: 'Brokers in Edible Oil, Oilcakes Etc.',
+      address: 'A 1503, Privilon, Ambli BRT Road, Iskon Crossroads,',
+      city: 'Ahmedabad',
+      state: 'Gujarat',
+      pincode: ' 380054',
+      gst_number: '24ABMPT3200E1Z0',
+      mobile_number: '9825067157',
+      whatsapp_number: '9825067157',
+      phone_number: '(02767) 256762',
+      email: 'hcunjha2018@gmail.com'
     };
 
     // Determine seller/buyer based on transaction type
     let seller, buyer;
     if (sauda.transaction_type === 'sell') {
       seller = {
-        name: 'HARDIK CANVASING, AHMEDABAD',
-        gstin: company.gstin,
+        name: company.company_name,
+        address: company.address,
+        city: company.city,
+        state: company.state,
+        pincode: company.pincode,
+        gstin: company.gst_number,
       };
       buyer = {
-        name: sauda.party_name.toUpperCase(),
+        name: sauda.party_name,
+        address: '', // Party address not stored in current schema
+        city: sauda.party_city,
+        state: 'Gujarat', // Default state
+        pincode: '',
         gstin: sauda.party_gstin || '',
       };
     } else {
       buyer = {
-        name: 'HARDIK CANVASING, AHMEDABAD',
-        gstin: company.gstin,
+        name: company.company_name,
+        address: company.address,
+        city: company.city,
+        state: company.state,
+        pincode: company.pincode,
+        gstin: company.gst_number,
       };
       seller = {
-        name: sauda.party_name.toUpperCase(),
+        name: sauda.party_name,
+        address: '', // Party address not stored in current schema
+        city: sauda.party_city,
+        state: 'Gujarat', // Default state
+        pincode: '',
         gstin: sauda.party_gstin || '',
       };
     }
 
     // Create PDF
     const doc = new PDFDocument({ 
-      margin: 40, 
+      margin: 30, 
       size: 'A4',
       layout: 'portrait'
     });
     
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=Contract_Confirmation_${sauda.sauda_no}.pdf`);
+    res.setHeader('Content-Disposition', `attachment; filename=Contract_Note_${sauda.sauda_no}.pdf`);
     doc.pipe(res);
 
     // Page dimensions
     const pageWidth = 595;
     const pageHeight = 842;
-    const margin = 40;
+    const margin = 30;
     const contentWidth = pageWidth - (2 * margin);
 
-    // Header with grey background bars
-    doc.rect(0, 0, pageWidth, 60).fill('#F0F0F0');
-    doc.rect(0, pageHeight - 60, pageWidth, 60).fill('#F0F0F0');
-
-    // Company name and details
-    doc.fontSize(24).font('Helvetica-Bold').fillColor('#000000');
-    doc.text(company.name, margin, 20, { align: 'center', width: contentWidth });
+    // Header - Company Information
+    doc.fontSize(18).font('Helvetica-Bold').fillColor('#000000');
+    doc.text(company.company_name, margin, 20, { align: 'center', width: contentWidth });
     
-    doc.fontSize(14).font('Helvetica');
-    doc.text(company.business, margin, 50, { align: 'center', width: contentWidth });
+    doc.fontSize(12).font('Helvetica');
+    doc.text(company.address, margin, 45, { align: 'center', width: contentWidth });
     
-    doc.fontSize(12);
-    doc.text(company.address, margin, 75, { align: 'center', width: contentWidth });
-    
-    doc.fontSize(11);
-    doc.text(`Phone: ${company.phone}`, margin, 100, { align: 'center', width: contentWidth });
-    doc.text(`Mobile: ${company.mobile}`, margin, 115, { align: 'center', width: contentWidth });
-    doc.text(`e-Mail Id: ${company.email}`, margin, 130, { align: 'center', width: contentWidth });
+    doc.fontSize(10);
+    doc.text(`Email: ${company.email}`, margin, 65, { align: 'center', width: contentWidth });
+    doc.text(`Contact (Whatsapp): ${company.whatsapp_number}`, margin, 80, { align: 'center', width: contentWidth });
+    doc.text(`Phone Numbers: ${company.phone_number}`, margin, 95, { align: 'center', width: contentWidth });
+    doc.text(`Mobile Numbers: ${company.mobile_number}`, margin, 110, { align: 'center', width: contentWidth });
 
-    // Black bar for "CONTRACT CONFIRMATION"
-    doc.rect(margin, 160, contentWidth, 25).fill('#000000');
-    doc.fontSize(16).font('Helvetica-Bold').fillColor('#FFFFFF');
-    doc.text('CONTRACT CONFIRMATION', margin, 170, { align: 'center', width: contentWidth });
+    // Document Title
+    doc.fontSize(16).font('Helvetica-Bold');
+    doc.text('Contract Note', margin, 140, { align: 'center', width: contentWidth });
 
-    // Introductory statement
-    doc.fontSize(11).font('Helvetica').fillColor('#000000');
-    doc.text('We hereby inform you that, this contract sale / purchase business was concluded today over the telephonic conversation for below commidity.', margin, 200, { width: contentWidth });
-
-    // Contract details section
-    let y = 230;
-    const labelWidth = 120;
-    const valueWidth = contentWidth - labelWidth - 20;
+    // Document Details
+    let y = 170;
     const leftMargin = margin + 10;
+    const labelWidth = 100;
+    const valueWidth = contentWidth - labelWidth - 20;
 
     const addDetailRow = (label, value) => {
-      doc.fontSize(11).font('Helvetica-Bold');
+      doc.fontSize(10).font('Helvetica-Bold');
       doc.text(label, leftMargin, y, { width: labelWidth });
       doc.font('Helvetica');
       doc.text(value, leftMargin + labelWidth + 10, y, { width: valueWidth });
-      y += 20;
+      y += 18;
     };
 
-    addDetailRow('CONTRACT NO.:', sauda.sauda_no);
-    addDetailRow('CONTRACT DATE:', new Date(sauda.date).toLocaleDateString('en-GB'));
-    addDetailRow('SELLER NAME:', seller.name);
-    addDetailRow('BUYER NAME:', buyer.name);
-    addDetailRow('MATERIAL:', sauda.item_name.toUpperCase());
-    addDetailRow('QUANTITY:', `${sauda.quantity_packs} TON`);
-    addDetailRow('RATE:', `${Number(sauda.rate_per_10kg).toFixed(2)} PER 10 KG + IGST, (${sauda.ex_plant_name || 'ADANI HAZIRA'})`);
-    addDetailRow('DELIVERY PERIOD:', sauda.loading_due_date ? new Date(sauda.loading_due_date).toLocaleDateString('en-GB') : 'AS PER CONTRACT');
-    addDetailRow('PAYMENT:', sauda.payment_condition || 'ADVANCE');
-    addDetailRow('REMARKS:', 'FIX DUTY');
+    addDetailRow('Sauda No.:', sauda.sauda_no);
+    addDetailRow('Sauda Date:', new Date(sauda.date).toLocaleDateString('en-GB'));
+    addDetailRow('General Note:', 'All Details like Party Name & Address are verified by GSTIN. So please use that for billing purpose.');
 
-    // Terms and conditions
+    // Seller Information
+    y += 10;
+    doc.fontSize(11).font('Helvetica-Bold');
+    doc.text('Seller Information:', leftMargin, y);
+    y += 20;
+
+    addDetailRow('Seller Name:', seller.name);
+    addDetailRow('Billing Address:', seller.address);
+    addDetailRow('City:', seller.city);
+    addDetailRow('State:', seller.state);
+    addDetailRow('Pincode:', seller.pincode);
+    addDetailRow('GSTIN:', seller.gstin);
+
+    // Buyer Information
+    y += 10;
+    doc.fontSize(11).font('Helvetica-Bold');
+    doc.text('Buyer Information:', leftMargin, y);
+    y += 20;
+
+    addDetailRow('Buyer Name:', buyer.name);
+    addDetailRow('Billing Address:', buyer.address);
+    addDetailRow('City:', buyer.city);
+    addDetailRow('State:', buyer.state);
+    addDetailRow('Pincode:', buyer.pincode);
+    addDetailRow('GSTIN:', buyer.gstin);
+
+    // Transaction Details
+    y += 10;
+    doc.fontSize(11).font('Helvetica-Bold');
+    doc.text('Transaction Details:', leftMargin, y);
+    y += 20;
+
+    addDetailRow('Narration:', `${sauda.quantity_packs} to ${sauda.quantity_packs} MT`);
+    addDetailRow('Delivery Condition:', sauda.delivery_condition || 'Fri-Sat');
+    addDetailRow('Payment Condition:', sauda.payment_condition || 'Advance');
+    addDetailRow('Tax Type:', '+ GST');
+    addDetailRow('Delivery Type:', '-Motability Delivery');
+    addDetailRow('Delivery Add.:', '');
+
+    // Item Table
     y += 20;
     doc.fontSize(11).font('Helvetica-Bold');
-    doc.text('Other Terms:', leftMargin, y);
+    doc.text('Item Details:', leftMargin, y);
     y += 20;
 
-    const terms = [
-      "Buyer must be lifting all quantity on or before above mentioned delivery period, if buyer don't lift then seller party have right to take decision on buyer and it should be acceptable by buyer.",
-      "Custom duty, levies, surcharge, taxes or additional duty will be on Seller's A/c. The rate will be fixed, custom duty paid and any charges in tarrif value.",
-      "Send duly signed copy of this contract as an acceptance, failing which, it shall be deemed as if the same has been accepted.",
-      "Kindly make note on this contract and in case of any discrepancy, kindly let us know immediately.",
-      "Once the delivery has been affected no complaints whatever shall be entertain.",
-      "Payment by advance D.D. Pay Slip, RTGS, NEFT or Fund Transfer.",
-      "On sending the goods to purchaser a copy of the bill be sent to us.",
-      "We will not be responsible if any profit / loss after deal.",
-      "Subject To Ahmedabad Jurisdiction."
-    ];
+    // Table headers
+    const tableY = y;
+    const colWidths = [30, 150, 80, 80, 80, 80];
+    const tableX = leftMargin;
+    
+    // Draw table borders
+    doc.rect(tableX, tableY, contentWidth - 20, 25).stroke();
+    
+    // Headers
+    doc.fontSize(9).font('Helvetica-Bold');
+    doc.text('Sr.', tableX + 5, tableY + 8);
+    doc.text('Item Name', tableX + 35, tableY + 8);
+    doc.text('Packs (M.T.)', tableX + 185, tableY + 8);
+    doc.text('Filling (*1000)', tableX + 265, tableY + 8);
+    doc.text('Quantity (K.g.)', tableX + 345, tableY + 8);
+    doc.text('Rate', tableX + 425, tableY + 8);
 
-    doc.fontSize(10).font('Helvetica');
-    terms.forEach(term => {
-      doc.text(`• ${term}`, leftMargin + 10, y, { width: contentWidth - 20 });
-      y += 25;
-    });
+    // Item row
+    y += 30;
+    doc.rect(tableX, y, contentWidth - 20, 25).stroke();
+    
+    doc.fontSize(9).font('Helvetica');
+    doc.text('1', tableX + 5, y + 8);
+    doc.text(sauda.item_name, tableX + 35, y + 8);
+    doc.text(sauda.hsn_code, tableX + 35, y + 20);
+    doc.text(sauda.quantity_packs.toFixed(2), tableX + 185, y + 8);
+    doc.text('1000.00', tableX + 265, y + 8);
+    doc.text((sauda.quantity_packs * 1000).toFixed(2), tableX + 345, y + 8);
+    doc.text(`${sauda.rate_per_10kg.toFixed(3)} (Per 10 KGs)`, tableX + 425, y + 8);
+
+    // Total row
+    y += 30;
+    doc.rect(tableX, y, contentWidth - 20, 25).stroke();
+    
+    doc.fontSize(9).font('Helvetica-Bold');
+    doc.text('Total', tableX + 35, y + 8);
+    doc.text(sauda.quantity_packs.toFixed(2), tableX + 185, y + 8);
+    doc.text('', tableX + 265, y + 8);
+    doc.text((sauda.quantity_packs * 1000).toFixed(2), tableX + 345, y + 8);
+
+    // Footer Note
+    y += 50;
+    doc.fontSize(9).font('Helvetica');
+    doc.text('Note: It is very much clear from above that the contract is between Seller & Purchaser are they themselves are responsible for any breach of terms & conditions settled between them. We stand only as witness.', leftMargin, y, { width: contentWidth - 20 });
+
+    // Signature section
+    y += 40;
+    doc.fontSize(10).font('Helvetica-Bold');
+    doc.text('Signed For:', leftMargin, y);
+    doc.text(company.company_name, leftMargin + 80, y);
+    
+    y += 20;
+    doc.text('Signature:', leftMargin, y);
+    doc.text('_________________', leftMargin + 80, y);
+    
+    y += 20;
+    doc.text('Title:', leftMargin, y);
+    doc.text('Proprietor', leftMargin + 80, y);
 
     doc.end();
   } catch (error) {
