@@ -392,7 +392,10 @@ const generateSaudaNotePDF = async (req, res) => {
 
     // Header - Company Information (matching CONTRACT CONFIRMATION format)
     doc.fontSize(18).font('Helvetica-Bold').fillColor('#000000');
-    doc.text(company.company_name || 'Hardik Canvassing', margin, 30, { align: 'center', width: contentWidth });
+    // Convert company name to proper case (first letter of each word capitalized)
+    const companyName = company.company_name || 'Hardik Canvassing';
+    const properCaseName = companyName.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+    doc.text(properCaseName, margin, 30, { align: 'center', width: contentWidth });
     
     doc.fontSize(12).font('Helvetica').fillColor('#000000');
     doc.text(company.business_type || 'Brokers in Edible Oil, Oilcakes Etc.,', margin, 55, { align: 'center', width: contentWidth });
