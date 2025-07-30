@@ -499,15 +499,15 @@ const generateSaudaNotePDF = async (req, res) => {
     
     // Other terms as bullet points
     const terms = [
-      'Buyer must be lifting all quantity on or before above mentioned delivery period, if buyer don\'t lift then seller party have right to take decision on buyer and it should be acceptable by buyer.',
+      '* Buyer must be lifting all quantity on or before above mentioned delivery period, if buyer don\'t lift then seller party have right to take decision on buyer and it should be acceptable by buyer.',
       '',
-      'It is very much clear from above that the contract is between Seller & Purchaser are they themselves are responsible for any breach of terms & conditions settled between them. We stand ony as witness.',
+      '* It is very much clear from above that the contract is between Seller & Purchaser are they themselves are responsible for any breach of terms & conditions settled between them. We stand ony as witness.',
       '',
-      'Subject To Ahmedabad Jurisdiction.'
+      '* Subject To Ahmedabad Jurisdiction.'
     ];
     
     terms.forEach((term, index) => {
-      doc.text(`* ${term}`, margin + 10, y, { width: contentWidth - 20 });
+      doc.text(` ${term}`, margin + 10, y, { width: contentWidth - 20 });
       y += 18; // Increased spacing between terms
     });
     
@@ -518,7 +518,7 @@ const generateSaudaNotePDF = async (req, res) => {
     doc.fontSize(8).font('Helvetica');
     doc.text(`GST# Seller: ${seller.gstin || 'N/A'}, Buyer: ${buyer.gstin || 'N/A'}`, margin, y);
     y += 15;
-    doc.text('SarthiHub Tech sofware services, Ahmedabad. 704 374 0396', margin, y);
+    doc.text('SarthiHub Tech Software services, Ahmedabad. 704 374 0396', margin, y);
     
     // Right side - Company signature (adjusted Y position to prevent overlap)
     const footerY = y - 15; // Use separate variable for right side
