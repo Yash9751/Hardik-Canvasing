@@ -11,6 +11,9 @@ router.get('/pending', saudaController.getPendingSauda);
 // Get next sauda number
 router.get('/next-number', saudaController.getNextSaudaNumber);
 
+// Download Sauda Note PDF - This must come before /:id route
+router.get('/:id/pdf', saudaController.generateSaudaNotePDF);
+
 // Get sauda by ID
 router.get('/:id', saudaController.getSaudaById);
 
@@ -22,8 +25,5 @@ router.put('/:id', saudaController.updateSauda);
 
 // Delete sauda
 router.delete('/:id', saudaController.deleteSauda);
-
-// Download Sauda Note PDF
-router.get('/:id/pdf', saudaController.generateSaudaNotePDF);
 
 module.exports = router; 

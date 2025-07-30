@@ -292,6 +292,7 @@ const getNextSaudaNumber = async (req, res) => {
 const generateSaudaNotePDF = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log('PDF generation requested for sauda ID:', id);
     
     // Fetch sauda data with all related information
     const result = await db.query(`
@@ -391,16 +392,16 @@ const generateSaudaNotePDF = async (req, res) => {
 
     // Header - Company Information
     doc.fontSize(18).font('Helvetica-Bold').fillColor('#000000');
-    doc.text(company.company_name, margin, 20, { align: 'center', width: contentWidth });
+    doc.text(company.company_name || 'Hardik Canvassing', margin, 20, { align: 'center', width: contentWidth });
     
     doc.fontSize(12).font('Helvetica');
-    doc.text(company.address, margin, 45, { align: 'center', width: contentWidth });
+    doc.text(company.address || 'A 1503, Privilon, Ambli BRT Road, Iskon Crossroads,', margin, 45, { align: 'center', width: contentWidth });
     
     doc.fontSize(10);
-    doc.text(`Email: ${company.email}`, margin, 65, { align: 'center', width: contentWidth });
-    doc.text(`Contact (Whatsapp): ${company.whatsapp_number}`, margin, 80, { align: 'center', width: contentWidth });
-    doc.text(`Phone Numbers: ${company.phone_number}`, margin, 95, { align: 'center', width: contentWidth });
-    doc.text(`Mobile Numbers: ${company.mobile_number}`, margin, 110, { align: 'center', width: contentWidth });
+    doc.text(`Email: ${company.email || 'hcunjha2018@gmail.com'}`, margin, 65, { align: 'center', width: contentWidth });
+    doc.text(`Contact (Whatsapp): ${company.whatsapp_number || '9825067157'}`, margin, 80, { align: 'center', width: contentWidth });
+    doc.text(`Phone Numbers: ${company.phone_number || '(02767) 256762'}`, margin, 95, { align: 'center', width: contentWidth });
+    doc.text(`Mobile Numbers: ${company.mobile_number || '9825067157'}`, margin, 110, { align: 'center', width: contentWidth });
 
     // Document Title
     doc.fontSize(16).font('Helvetica-Bold');
@@ -420,8 +421,8 @@ const generateSaudaNotePDF = async (req, res) => {
       y += 18;
     };
 
-    addDetailRow('Sauda No.:', sauda.sauda_no);
-    addDetailRow('Sauda Date:', new Date(sauda.date).toLocaleDateString('en-GB'));
+    addDetailRow('Sauda No.:', sauda.sauda_no || 'N/A');
+    addDetailRow('Sauda Date:', sauda.date ? new Date(sauda.date).toLocaleDateString('en-GB') : 'N/A');
     addDetailRow('General Note:', 'All Details like Party Name & Address are verified by GSTIN. So please use that for billing purpose.');
 
     // Seller Information
@@ -456,7 +457,7 @@ const generateSaudaNotePDF = async (req, res) => {
     doc.text('Transaction Details:', leftMargin, y);
     y += 20;
 
-    addDetailRow('Narration:', `${sauda.quantity_packs} to ${sauda.quantity_packs} MT`);
+    addDetailRow('Narration:', `${sauda.quantity_packs || 0} to ${sauda.quantity_packs || 0} MT`);
     addDetailRow('Delivery Condition:', sauda.delivery_condition || 'Fri-Sat');
     addDetailRow('Payment Condition:', sauda.payment_condition || 'Advance');
     addDetailRow('Tax Type:', '+ GST');
@@ -492,12 +493,12 @@ const generateSaudaNotePDF = async (req, res) => {
     
     doc.fontSize(9).font('Helvetica');
     doc.text('1', tableX + 5, y + 8);
-    doc.text(sauda.item_name, tableX + 35, y + 8);
-    doc.text(sauda.hsn_code, tableX + 35, y + 20);
-    doc.text(sauda.quantity_packs.toFixed(2), tableX + 185, y + 8);
+    doc.text(sauda.item_name || 'N/A', tableX + 35, y + 8);
+    doc.text(sauda.hsn_code || 'N/A', tableX + 35, y + 20);
+    doc.text((sauda.quantity_packs || 0).toFixed(2), tableX + 185, y + 8);
     doc.text('1000.00', tableX + 265, y + 8);
-    doc.text((sauda.quantity_packs * 1000).toFixed(2), tableX + 345, y + 8);
-    doc.text(`${sauda.rate_per_10kg.toFixed(3)} (Per 10 KGs)`, tableX + 425, y + 8);
+    doc.text(((sauda.quantity_packs || 0) * 1000).toFixed(2), tableX + 345, y + 8);
+    doc.text(`${(sauda.rate_per_10kg || 0).toFixed(3)} (Per 10 KGs)`, tableX + 425, y + 8);
 
     // Total row
     y += 30;
@@ -505,9 +506,9 @@ const generateSaudaNotePDF = async (req, res) => {
     
     doc.fontSize(9).font('Helvetica-Bold');
     doc.text('Total', tableX + 35, y + 8);
-    doc.text(sauda.quantity_packs.toFixed(2), tableX + 185, y + 8);
+    doc.text((sauda.quantity_packs || 0).toFixed(2), tableX + 185, y + 8);
     doc.text('', tableX + 265, y + 8);
-    doc.text((sauda.quantity_packs * 1000).toFixed(2), tableX + 345, y + 8);
+    doc.text(((sauda.quantity_packs || 0) * 1000).toFixed(2), tableX + 345, y + 8);
 
     // Footer Note
     y += 50;
@@ -529,9 +530,13 @@ const generateSaudaNotePDF = async (req, res) => {
     doc.text('Proprietor', leftMargin + 80, y);
 
     doc.end();
+    console.log('PDF generation completed successfully for sauda ID:', id);
   } catch (error) {
     console.error('Error generating Sauda Note PDF:', error);
-    res.status(500).json({ error: 'Failed to generate PDF' });
+    // If headers haven't been sent yet, send error response
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to generate PDF: ' + error.message });
+    }
   }
 };
 
