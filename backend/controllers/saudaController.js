@@ -390,144 +390,221 @@ const generateSaudaNotePDF = async (req, res) => {
     const margin = 30;
     const contentWidth = pageWidth - (2 * margin);
 
-    // Header - Company Information
-    doc.fontSize(18).font('Helvetica-Bold').fillColor('#000000');
+    // Header - Company Information (matching reference design)
+    doc.fontSize(18).font('Helvetica-Bold').fillColor('#000080'); // Dark blue color
     doc.text(company.company_name || 'Hardik Canvassing', margin, 20, { align: 'center', width: contentWidth });
     
-    doc.fontSize(12).font('Helvetica');
+    doc.fontSize(12).font('Helvetica').fillColor('#000000');
     doc.text(company.address || 'A 1503, Privilon, Ambli BRT Road, Iskon Crossroads,', margin, 45, { align: 'center', width: contentWidth });
     
+    // Contact information - left aligned like reference
     doc.fontSize(10);
-    doc.text(`Email: ${company.email || 'hcunjha2018@gmail.com'}`, margin, 65, { align: 'center', width: contentWidth });
-    doc.text(`Contact (Whatsapp): ${company.whatsapp_number || '9825067157'}`, margin, 80, { align: 'center', width: contentWidth });
-    doc.text(`Phone Numbers: ${company.phone_number || '(02767) 256762'}`, margin, 95, { align: 'center', width: contentWidth });
-    doc.text(`Mobile Numbers: ${company.mobile_number || '9825067157'}`, margin, 110, { align: 'center', width: contentWidth });
+    doc.text(`Mail: ${company.email || 'hcunjha2018@gmail.com'}`, margin, 65);
+    doc.text(`Contact (Whatsapp): ${company.whatsapp_number || '9825067157'}`, margin, 80);
+    doc.text(`Phone: ${company.phone_number || '(02767) 256762'}`, margin, 95);
+    doc.text(`Mobile: ${company.mobile_number || '9825067157'}`, margin, 110);
 
+    // Horizontal line
+    doc.moveTo(margin, 130).lineTo(margin + contentWidth, 130).stroke();
+    
     // Document Title
     doc.fontSize(16).font('Helvetica-Bold');
-    doc.text('Contract Note', margin, 140, { align: 'center', width: contentWidth });
-
-    // Document Details
-    let y = 170;
-    const leftMargin = margin + 10;
-    const labelWidth = 100;
-    const valueWidth = contentWidth - labelWidth - 20;
-
-    const addDetailRow = (label, value) => {
-      doc.fontSize(10).font('Helvetica-Bold');
-      doc.text(label, leftMargin, y, { width: labelWidth });
-      doc.font('Helvetica');
-      doc.text(value, leftMargin + labelWidth + 10, y, { width: valueWidth });
-      y += 18;
-    };
-
-    addDetailRow('Sauda No.:', sauda.sauda_no || 'N/A');
-    addDetailRow('Sauda Date:', sauda.date ? new Date(sauda.date).toLocaleDateString('en-GB') : 'N/A');
-    addDetailRow('General Note:', 'All Details like Party Name & Address are verified by GSTIN. So please use that for billing purpose.');
-
-    // Seller Information
-    y += 10;
-    doc.fontSize(11).font('Helvetica-Bold');
-    doc.text('Seller Information:', leftMargin, y);
-    y += 20;
-
-    addDetailRow('Seller Name:', seller.name);
-    addDetailRow('Billing Address:', seller.address);
-    addDetailRow('City:', seller.city);
-    addDetailRow('State:', seller.state);
-    addDetailRow('Pincode:', seller.pincode);
-    addDetailRow('GSTIN:', seller.gstin);
-
-    // Buyer Information
-    y += 10;
-    doc.fontSize(11).font('Helvetica-Bold');
-    doc.text('Buyer Information:', leftMargin, y);
-    y += 20;
-
-    addDetailRow('Buyer Name:', buyer.name);
-    addDetailRow('Billing Address:', buyer.address);
-    addDetailRow('City:', buyer.city);
-    addDetailRow('State:', buyer.state);
-    addDetailRow('Pincode:', buyer.pincode);
-    addDetailRow('GSTIN:', buyer.gstin);
-
-    // Transaction Details
-    y += 10;
-    doc.fontSize(11).font('Helvetica-Bold');
-    doc.text('Transaction Details:', leftMargin, y);
-    y += 20;
-
-    addDetailRow('Narration:', `${parseFloat(sauda.quantity_packs) || 0} to ${parseFloat(sauda.quantity_packs) || 0} MT`);
-    addDetailRow('Delivery Condition:', sauda.delivery_condition || 'Fri-Sat');
-    addDetailRow('Payment Condition:', sauda.payment_condition || 'Advance');
-    addDetailRow('Tax Type:', '+ GST');
-    addDetailRow('Delivery Type:', '-Motability Delivery');
-    addDetailRow('Delivery Add.:', '');
-
-    // Item Table
-    y += 20;
-    doc.fontSize(11).font('Helvetica-Bold');
-    doc.text('Item Details:', leftMargin, y);
-    y += 20;
-
-    // Table headers
-    const tableY = y;
-    const colWidths = [30, 150, 80, 80, 80, 80];
-    const tableX = leftMargin;
+    doc.text('Contract Note', margin, 150, { align: 'center', width: contentWidth });
     
-    // Draw table borders
-    doc.rect(tableX, tableY, contentWidth - 20, 25).stroke();
+    // Horizontal line after title
+    doc.moveTo(margin, 170).lineTo(margin + contentWidth, 170).stroke();
+
+    // Document Details - Side by side layout like reference
+    let y = 190;
+    const leftMargin = margin + 10;
+    const rightMargin = margin + contentWidth / 2 + 10;
+    
+    // Sauda details in two columns
+    doc.fontSize(10).font('Helvetica-Bold');
+    doc.text('Sauda No. :', leftMargin, y);
+    doc.font('Helvetica');
+    doc.text(sauda.sauda_no || 'N/A', leftMargin + 80, y);
+    
+    doc.fontSize(10).font('Helvetica-Bold');
+    doc.text('Sauda Date:', rightMargin, y);
+    doc.font('Helvetica');
+    doc.text(sauda.date ? new Date(sauda.date).toLocaleDateString('en-GB') : 'N/A', rightMargin + 80, y);
+    
+    // Horizontal line
+    y += 25;
+    doc.moveTo(margin, y).lineTo(margin + contentWidth, y).stroke();
+    
+    // General Note
+    y += 15;
+    doc.fontSize(10).font('Helvetica');
+    doc.text('All Details like Party Name & Address are verified by GSTIN. So please use that for billing purpose.', margin, y, { align: 'center', width: contentWidth });
+    
+    // Thick horizontal line
+    y += 20;
+    doc.lineWidth(2);
+    doc.moveTo(margin, y).lineTo(margin + contentWidth, y).stroke();
+    doc.lineWidth(1);
+
+    // Seller and Buyer Information - Side by side like reference
+    y += 20;
+    const sellerX = margin + 10;
+    const buyerX = margin + contentWidth / 2 + 10;
+    const sellerWidth = contentWidth / 2 - 20;
+    const buyerWidth = contentWidth / 2 - 20;
+    
+    // Seller Information (Left Column)
+    doc.fontSize(11).font('Helvetica-Bold').fillColor('#000080');
+    doc.text(`Seller : ${seller.name}`, sellerX, y);
+    y += 15;
+    
+    doc.fontSize(10).font('Helvetica').fillColor('#000000');
+    doc.text(`Billing Add : ${seller.address}`, sellerX, y);
+    y += 12;
+    doc.text(`City : ${seller.city}`, sellerX, y);
+    y += 12;
+    doc.text(`State : ${seller.state}`, sellerX, y);
+    y += 12;
+    doc.text(`Pincode : ${seller.pincode}`, sellerX, y);
+    y += 12;
+    doc.fontSize(10).font('Helvetica-Bold');
+    doc.text(`GSTIN : ${seller.gstin}`, sellerX, y);
+    
+    // Reset Y for buyer column
+    y -= 60; // Go back up to align with seller
+    
+    // Buyer Information (Right Column)
+    doc.fontSize(11).font('Helvetica-Bold').fillColor('#000080');
+    doc.text(`Buyer : ${buyer.name}`, buyerX, y);
+    y += 15;
+    
+    doc.fontSize(10).font('Helvetica').fillColor('#000000');
+    doc.text(`Billing Add : ${buyer.address}`, buyerX, y);
+    y += 12;
+    doc.text(`City : ${buyer.city}`, buyerX, y);
+    y += 12;
+    doc.text(`State : ${buyer.state}`, buyerX, y);
+    y += 12;
+    doc.text(`Pincode : ${buyer.pincode}`, buyerX, y);
+    y += 12;
+    doc.fontSize(10).font('Helvetica-Bold');
+    doc.text(`GSTIN : ${buyer.gstin}`, buyerX, y);
+    
+    // Horizontal line
+    y += 20;
+    doc.moveTo(margin, y).lineTo(margin + contentWidth, y).stroke();
+
+    // Transaction Details - Two columns like reference
+    y += 20;
+    
+    // Left column
+    doc.fontSize(10).font('Helvetica');
+    doc.text(`Delivery Condition : ${sauda.delivery_condition || 'Fri-Sat'}`, sellerX, y);
+    y += 12;
+    doc.text(`Payment Condition : ${sauda.payment_condition || 'Advance'}`, sellerX, y);
+    y += 12;
+    doc.text(`Tax Type : + GST`, sellerX, y);
+    y += 12;
+    doc.text(`Delivery Type : -Motability Delivery`, sellerX, y);
+    
+    // Reset Y for right column
+    y -= 36;
+    
+    // Right column
+    doc.text(`Narration : ${parseFloat(sauda.quantity_packs) || 0} to ${parseFloat(sauda.quantity_packs) || 0} MT`, buyerX, y);
+    y += 12;
+    doc.text(`Delivery Add. : `, buyerX, y);
+    
+    // Horizontal line
+    y += 20;
+    doc.moveTo(margin, y).lineTo(margin + contentWidth, y).stroke();
+
+    // Item Table - Matching reference design
+    y += 20;
+    
+    // Table headers with proper column widths
+    const tableY = y;
+    const tableX = margin;
+    const colWidths = [40, 200, 80, 80, 80, 100];
+    let currentX = tableX;
+    
+    // Draw table border
+    doc.rect(tableX, tableY, contentWidth, 25).stroke();
     
     // Headers
     doc.fontSize(9).font('Helvetica-Bold');
-    doc.text('Sr.', tableX + 5, tableY + 8);
-    doc.text('Item Name', tableX + 35, tableY + 8);
-    doc.text('Packs (M.T.)', tableX + 185, tableY + 8);
-    doc.text('Filling (*1000)', tableX + 265, tableY + 8);
-    doc.text('Quantity (K.g.)', tableX + 345, tableY + 8);
-    doc.text('Rate', tableX + 425, tableY + 8);
+    doc.text('Sr.', currentX + 5, tableY + 8);
+    currentX += colWidths[0];
+    doc.text('Item Name', currentX + 5, tableY + 8);
+    currentX += colWidths[1];
+    doc.text('Packs (M.T.)', currentX + 5, tableY + 8);
+    currentX += colWidths[2];
+    doc.text('Filling (*1000)', currentX + 5, tableY + 8);
+    currentX += colWidths[3];
+    doc.text('Quantity (K.g.)', currentX + 5, tableY + 8);
+    currentX += colWidths[4];
+    doc.text('Rate', currentX + 5, tableY + 8);
 
     // Item row
     y += 30;
-    doc.rect(tableX, y, contentWidth - 20, 25).stroke();
+    doc.rect(tableX, y, contentWidth, 35).stroke(); // Taller row for HSN code
     
+    currentX = tableX;
     doc.fontSize(9).font('Helvetica');
-    doc.text('1', tableX + 5, y + 8);
-    doc.text(sauda.item_name || 'N/A', tableX + 35, y + 8);
-    doc.text(sauda.hsn_code || 'N/A', tableX + 35, y + 20);
-    doc.text((parseFloat(sauda.quantity_packs) || 0).toFixed(2), tableX + 185, y + 8);
-    doc.text('1000.00', tableX + 265, y + 8);
-    doc.text(((parseFloat(sauda.quantity_packs) || 0) * 1000).toFixed(2), tableX + 345, y + 8);
-    doc.text(`${(parseFloat(sauda.rate_per_10kg) || 0).toFixed(3)} (Per 10 KGs)`, tableX + 425, y + 8);
+    doc.text('1', currentX + 5, y + 8);
+    currentX += colWidths[0];
+    
+    // Item name and HSN code
+    doc.text(sauda.item_name || 'N/A', currentX + 5, y + 8);
+    doc.fontSize(8);
+    doc.text(`HSN Code : ${sauda.hsn_code || 'N/A'}`, currentX + 5, y + 20);
+    doc.fontSize(9);
+    currentX += colWidths[1];
+    
+    doc.text((parseFloat(sauda.quantity_packs) || 0).toFixed(2), currentX + 5, y + 8);
+    currentX += colWidths[2];
+    doc.text('1000.00', currentX + 5, y + 8);
+    currentX += colWidths[3];
+    doc.text(((parseFloat(sauda.quantity_packs) || 0) * 1000).toFixed(2), currentX + 5, y + 8);
+    currentX += colWidths[4];
+    
+    // Rate with "Per 10 KGs" on next line
+    doc.text((parseFloat(sauda.rate_per_10kg) || 0).toFixed(3), currentX + 5, y + 8);
+    doc.fontSize(8);
+    doc.text('(Per 10 KGs)', currentX + 5, y + 20);
+    doc.fontSize(9);
 
     // Total row
-    y += 30;
-    doc.rect(tableX, y, contentWidth - 20, 25).stroke();
+    y += 40;
+    doc.rect(tableX, y, contentWidth, 25).stroke();
     
+    currentX = tableX + colWidths[0];
     doc.fontSize(9).font('Helvetica-Bold');
-    doc.text('Total', tableX + 35, y + 8);
-    doc.text((parseFloat(sauda.quantity_packs) || 0).toFixed(2), tableX + 185, y + 8);
-    doc.text('', tableX + 265, y + 8);
-    doc.text(((parseFloat(sauda.quantity_packs) || 0) * 1000).toFixed(2), tableX + 345, y + 8);
+    doc.text('Total', currentX + 5, y + 8);
+    currentX += colWidths[1];
+    doc.text((parseFloat(sauda.quantity_packs) || 0).toFixed(2), currentX + 5, y + 8);
+    currentX += colWidths[2];
+    // Empty for Filling
+    currentX += colWidths[3];
+    doc.text(((parseFloat(sauda.quantity_packs) || 0) * 1000).toFixed(2), currentX + 5, y + 8);
 
     // Footer Note
-    y += 50;
+    y += 30;
+    doc.moveTo(margin, y).lineTo(margin + contentWidth, y).stroke();
+    y += 15;
     doc.fontSize(9).font('Helvetica');
-    doc.text('Note: It is very much clear from above that the contract is between Seller & Purchaser are they themselves are responsible for any breach of terms & conditions settled between them. We stand only as witness.', leftMargin, y, { width: contentWidth - 20 });
+    doc.text('Note : It is very much clear from above that the contract is between Seller & Purchaser are they themselves are responsible for any breach of terms & conditions settled between them. We stand only as witness.', margin, y, { width: contentWidth });
 
-    // Signature section
+    // Signature section - Right aligned like reference
     y += 40;
-    doc.fontSize(10).font('Helvetica-Bold');
-    doc.text('Signed For:', leftMargin, y);
-    doc.text(company.company_name, leftMargin + 80, y);
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#000080');
+    doc.text(`For, ${company.company_name}`, margin + contentWidth - 200, y, { width: 200, align: 'right' });
+    
+    y += 30;
+    // Space for signature
+    doc.moveTo(margin + contentWidth - 150, y).lineTo(margin + contentWidth - 50, y).stroke();
     
     y += 20;
-    doc.text('Signature:', leftMargin, y);
-    doc.text('_________________', leftMargin + 80, y);
-    
-    y += 20;
-    doc.text('Title:', leftMargin, y);
-    doc.text('Proprietor', leftMargin + 80, y);
+    doc.text('Proprietor', margin + contentWidth - 200, y, { width: 200, align: 'right' });
 
     doc.end();
     console.log('PDF generation completed successfully for sauda ID:', id);
