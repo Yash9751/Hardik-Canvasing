@@ -401,7 +401,7 @@ const generateSaudaNotePDF = async (req, res) => {
     doc.text(company.business_type || 'Brokers in Edible Oil, Oilcakes Etc.,', margin, 55, { align: 'center', width: contentWidth });
     
     // Full address in one line - fixed construction
-    const fullAddress = `${company.address || 'A 1503, Privilon, Ambli BRT Road, Iskon Crossroads,'}, India`;
+    const fullAddress = `${company.address || 'A 1503, Privilon, Ambli BRT Road, Iskon Crossroads,'},`;
     doc.text(fullAddress, margin, 75, { align: 'center', width: contentWidth });
     
     // Contact information - center aligned with proper spacing
