@@ -442,10 +442,15 @@ const generateSaudaNotePDF = async (req, res) => {
     drawKeyValue('CONTRACT DATE', sauda.date ? new Date(sauda.date).toLocaleDateString('en-GB') : 'N/A', y);
     
     y += lineHeight;
-    drawKeyValue('SELLER NAME', `${seller.name} (${seller.city})`, y);
+    // For sell: show seller without city, buyer with city
+    // For purchase: show seller with city, buyer without city
+    const sellerDisplay = sauda.transaction_type === 'sell' ? seller.name : `${seller.name} (${seller.city})`;
+    const buyerDisplay = sauda.transaction_type === 'sell' ? `${buyer.name} (${buyer.city})` : buyer.name;
+    
+    drawKeyValue('SELLER NAME', sellerDisplay, y);
     
     y += lineHeight;
-    drawKeyValue('BUYER NAME', `${buyer.name} (${buyer.city})`, y);
+    drawKeyValue('BUYER NAME', buyerDisplay, y);
     
     y += lineHeight;
     drawKeyValue('MATERIAL', sauda.item_name || 'N/A', y);
