@@ -458,8 +458,10 @@ const generateSaudaNotePDF = async (req, res) => {
     y += 18;
     
     doc.fontSize(10).font('Helvetica').fillColor('#000000');
-    doc.text(`Billing Add : ${seller.address}`, sellerX, y);
-    y += 15;
+    // Billing address with text wrapping to prevent overlap
+    doc.text(`Billing Add : ${seller.address}`, sellerX, y, { width: sellerWidth, align: 'left' });
+    y += 25; // Fixed height for billing address to accommodate wrapping
+    
     doc.text(`City : ${seller.city}`, sellerX, y);
     y += 15;
     doc.text(`State : ${seller.state}`, sellerX, y);
@@ -469,8 +471,8 @@ const generateSaudaNotePDF = async (req, res) => {
     doc.fontSize(10).font('Helvetica-Bold');
     doc.text(`GSTIN : ${seller.gstin}`, sellerX, y);
     
-    // Reset Y for buyer column
-    y -= 75; // Go back up to align with seller
+    // Reset Y for buyer column - adjust based on new billing address height
+    y -= 85; // Go back up to align with seller
     
     // Buyer Information (Right Column)
     doc.fontSize(11).font('Helvetica-Bold').fillColor('#000080');
@@ -478,8 +480,10 @@ const generateSaudaNotePDF = async (req, res) => {
     y += 18;
     
     doc.fontSize(10).font('Helvetica').fillColor('#000000');
-    doc.text(`Billing Add : ${buyer.address}`, buyerX, y);
-    y += 15;
+    // Billing address with text wrapping to prevent overlap
+    doc.text(`Billing Add : ${buyer.address}`, buyerX, y, { width: buyerWidth, align: 'left' });
+    y += 25; // Fixed height for billing address to accommodate wrapping
+    
     doc.text(`City : ${buyer.city}`, buyerX, y);
     y += 15;
     doc.text(`State : ${buyer.state}`, buyerX, y);
@@ -494,7 +498,7 @@ const generateSaudaNotePDF = async (req, res) => {
     doc.moveTo(margin, y).lineTo(margin + contentWidth, y).stroke();
 
     // Transaction Details - Two columns like reference
-    y += 30;
+    y += 35; // Increased spacing to account for longer billing addresses
     
     // Left column
     doc.fontSize(10).font('Helvetica');
