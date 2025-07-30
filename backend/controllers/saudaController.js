@@ -417,87 +417,65 @@ const generateSaudaNotePDF = async (req, res) => {
     doc.fontSize(10).font('Helvetica').fillColor('#000000');
     doc.text('We hereby inform you that, this contract sale / purchase business was concluded today over the telephonic conversation for below commidity.', margin, 195, { width: contentWidth });
 
-    // Contract Details - Key-value pairs format
+    // Contract Details - Key-value pairs format with aligned colons
     let y = 225;
     const keyX = margin + 10;
-    const valueX = margin + 180; // Increased spacing to prevent overlap
-    const lineHeight = 22; // Increased line height for better spacing
+    const colonX = margin + 140; // Fixed position for all colons
+    const valueX = margin + 150; // Start values right after colons
+    const lineHeight = 25; // Increased line height for better spacing
     
-    // Contract details in key-value format
-    doc.fontSize(10).font('Helvetica');
-    doc.text('CONTRACT NO.:', keyX, y);
-    doc.font('Helvetica-Bold');
-    doc.text(sauda.sauda_no || 'N/A', valueX, y);
+    // Helper function to draw aligned key-value pairs
+    const drawKeyValue = (key, value, currentY) => {
+      doc.fontSize(10).font('Helvetica');
+      doc.text(key, keyX, currentY);
+      doc.text(':', colonX, currentY);
+      doc.font('Helvetica-Bold');
+      doc.text(value, valueX, currentY);
+    };
     
-    y += lineHeight;
-    doc.fontSize(10).font('Helvetica');
-    doc.text('CONTRACT DATE:', keyX, y);
-    doc.font('Helvetica-Bold');
-    doc.text(sauda.date ? new Date(sauda.date).toLocaleDateString('en-GB') : 'N/A', valueX, y);
-    
-    y += lineHeight;
-    doc.fontSize(10).font('Helvetica');
-    doc.text('SELLER NAME:', keyX, y);
-    doc.font('Helvetica-Bold');
-    doc.text(seller.name, valueX, y);
+    // Contract details in key-value format with aligned colons
+    drawKeyValue('CONTRACT NO', sauda.sauda_no || 'N/A', y);
     
     y += lineHeight;
-    doc.fontSize(10).font('Helvetica');
-    doc.text('BUYER NAME:', keyX, y);
-    doc.font('Helvetica-Bold');
-    doc.text(buyer.name, valueX, y);
+    drawKeyValue('CONTRACT DATE', sauda.date ? new Date(sauda.date).toLocaleDateString('en-GB') : 'N/A', y);
     
     y += lineHeight;
-    doc.fontSize(10).font('Helvetica');
-    doc.text('MATERIAL:', keyX, y);
-    doc.font('Helvetica-Bold');
-    doc.text(sauda.item_name || 'N/A', valueX, y);
+    drawKeyValue('SELLER NAME', seller.name, y);
     
     y += lineHeight;
-    doc.fontSize(10).font('Helvetica');
-    doc.text('QUANTITY:', keyX, y);
-    doc.font('Helvetica-Bold');
-    doc.text(`${parseFloat(sauda.quantity_packs) || 0} TON`, valueX, y);
+    drawKeyValue('BUYER NAME', buyer.name, y);
     
     y += lineHeight;
-    doc.fontSize(10).font('Helvetica');
-    doc.text('RATE:', keyX, y);
-    doc.font('Helvetica-Bold');
-    const rateText = `${(parseFloat(sauda.rate_per_10kg) || 0).toFixed(2)} PER 10 KG + IGST, (${sauda.ex_plant_name || 'Ex Plant'})`;
-    doc.text(rateText, valueX, y);
+    drawKeyValue('MATERIAL', sauda.item_name || 'N/A', y);
     
     y += lineHeight;
-    doc.fontSize(10).font('Helvetica');
-    doc.text('DELIVERY PERIOD:', keyX, y);
-    doc.font('Helvetica-Bold');
-    const deliveryDate = sauda.loading_due_date ? new Date(sauda.loading_due_date).toLocaleDateString('en-GB') : 'N/A';
-    doc.text(deliveryDate, valueX, y);
+    drawKeyValue('QUANTITY', `${parseFloat(sauda.quantity_packs) || 0} TON`, y);
     
     y += lineHeight;
-    doc.fontSize(10).font('Helvetica');
-    doc.text('PAYMENT:', keyX, y);
-    doc.font('Helvetica-Bold');
-    doc.text(sauda.payment_condition || 'Advance', valueX, y);
+    drawKeyValue('RATE', `${(parseFloat(sauda.rate_per_10kg) || 0).toFixed(2)} PER 10 KG + IGST, (${sauda.ex_plant_name || 'Ex Plant'})`, y);
     
     y += lineHeight;
-    doc.fontSize(10).font('Helvetica');
-    doc.text('REMARKS:', keyX, y);
-    doc.font('Helvetica-Bold');
-    doc.text('FIX DUTY', valueX, y);
+    drawKeyValue('DELIVERY PERIOD', sauda.loading_due_date ? new Date(sauda.loading_due_date).toLocaleDateString('en-GB') : 'N/A', y);
+    
+    y += lineHeight;
+    drawKeyValue('PAYMENT', sauda.payment_condition || 'Advance', y);
+    
+    y += lineHeight;
+    drawKeyValue('REMARKS', 'FIX DUTY', y);
 
     // Separator line
     y += 20;
     doc.moveTo(margin, y).lineTo(margin + contentWidth, y).stroke();
     
     // Other Terms section
-    y += 20;
+    y += 25; // Increased spacing before Other Terms
     doc.fontSize(10).font('Helvetica-Bold');
     doc.text('Other Terms:', margin, y);
     
-    y += 20;
+    y += 25; // Increased spacing after Other Terms title
     doc.fontSize(9).font('Helvetica');
     
-    // Other terms as bullet points
+    // Other terms as bullet points with better spacing
     const terms = [
       '* Buyer must be lifting all quantity on or before above mentioned delivery period, if buyer don\'t lift then seller party have right to take decision on buyer and it should be acceptable by buyer.',
       '',
@@ -507,8 +485,12 @@ const generateSaudaNotePDF = async (req, res) => {
     ];
     
     terms.forEach((term, index) => {
-      doc.text(` ${term}`, margin + 10, y, { width: contentWidth - 20 });
-      y += 18; // Increased spacing between terms
+      if (term.trim() === '') {
+        y += 12; // Less spacing for empty lines
+      } else {
+        doc.text(` ${term}`, margin + 10, y, { width: contentWidth - 20 });
+        y += 22; // Increased spacing between terms
+      }
     });
     
     // Footer section
