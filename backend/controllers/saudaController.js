@@ -422,7 +422,7 @@ const generateSaudaNotePDF = async (req, res) => {
     const keyX = margin + 10;
     const colonX = margin + 140; // Fixed position for all colons
     const valueX = margin + 150; // Start values right after colons
-    const lineHeight = 25; // Increased line height for better spacing
+    const lineHeight = 30; // Increased line height for better spacing
     
     // Helper function to draw aligned key-value pairs
     const drawKeyValue = (key, value, currentY) => {
