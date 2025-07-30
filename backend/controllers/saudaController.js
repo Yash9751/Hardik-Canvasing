@@ -428,12 +428,24 @@ const generateSaudaNotePDF = async (req, res) => {
     const lineHeight = 30; // Increased line height for better spacing
     
     // Helper function to draw aligned key-value pairs
-    const drawKeyValue = (key, value, currentY) => {
+    const drawKeyValue = (key, value, currentY, isName = false) => {
       doc.fontSize(10).font('Helvetica');
       doc.text(key, keyX, currentY);
       doc.text(':', colonX, currentY);
-      doc.font('Helvetica-Bold');
-      doc.text(value, valueX, currentY);
+      
+      if (isName) {
+        doc.font('Helvetica-Bold').fillColor('#000080'); // Dark blue for names
+      } else {
+        doc.font('Helvetica-Bold').fillColor('#000000'); // Black for other values
+      }
+      
+      // Right-align the value to the colon
+      const valueWidth = doc.widthOfString(value);
+      const valueXAligned = colonX - valueWidth - 5; // 5px gap from colon
+      doc.text(value, valueXAligned, currentY);
+      
+      // Reset color
+      doc.fillColor('#000000');
     };
     
     // Contract details in key-value format with aligned colons
@@ -450,10 +462,10 @@ const generateSaudaNotePDF = async (req, res) => {
     const sellerDisplay = sauda.transaction_type === 'sell' ? seller.name : `${seller.name} (${seller.city})`;
     const buyerDisplay = sauda.transaction_type === 'sell' ? `${buyer.name} (${buyer.city})` : buyer.name;
     
-    drawKeyValue('SELLER NAME', sellerDisplay, y);
+    drawKeyValue('SELLER NAME', sellerDisplay, y, true); // Dark blue for names
     
     y += lineHeight;
-    drawKeyValue('BUYER NAME', buyerDisplay, y);
+    drawKeyValue('BUYER NAME', buyerDisplay, y, true); // Dark blue for names
     
     y += lineHeight;
     drawKeyValue('MATERIAL', sauda.item_name || 'N/A', y);
@@ -471,7 +483,15 @@ const generateSaudaNotePDF = async (req, res) => {
     drawKeyValue('PAYMENT', sauda.payment_condition || 'Advance', y);
     
     y += lineHeight;
-    drawKeyValue('REMARKS', 'FIX DUTY', y);
+    drawKeyValue('REMARKS', sauda.remarks || '', y);
+    
+    // Add GSTIN based on transaction type
+    y += lineHeight;
+    if (sauda.transaction_type === 'sell') {
+      drawKeyValue('BUYER GSTIN', buyer.gstin || 'N/A', y);
+    } else {
+      drawKeyValue('SELLER GSTIN', seller.gstin || 'N/A', y);
+    }
 
     // Separator line
     y += 20;
@@ -506,10 +526,8 @@ const generateSaudaNotePDF = async (req, res) => {
     // Footer section
     y += 20;
     
-    // Left side - GST details
+    // Left side - Software credit
     doc.fontSize(8).font('Helvetica');
-    doc.text(`GST# Seller: ${seller.gstin || 'N/A'}, Buyer: ${buyer.gstin || 'N/A'}`, margin, y);
-    y += 15;
     doc.text('SarthiHub Tech Software services, Ahmedabad. 704 374 0396', margin, y);
     
     // Right side - Company signature (adjusted Y position to prevent overlap)
