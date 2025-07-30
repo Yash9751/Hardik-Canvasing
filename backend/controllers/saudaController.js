@@ -323,7 +323,7 @@ const generateSaudaNotePDF = async (req, res) => {
     const companyResult = await db.query('SELECT * FROM company_profile ORDER BY id LIMIT 1');
     const company = companyResult.rows[0] || {
       company_name: 'Hardik Canvassing',
-      business_type: 'Brokers in Edible Oil, Oilcakes Etc.',
+      business_type: 'All Kind Of Edible Oil Broker',
       address: 'A 1503, Privilon, Ambli BRT Road, Iskon Crossroads,',
       city: 'Ahmedabad',
       state: 'Gujarat',
@@ -339,7 +339,7 @@ const generateSaudaNotePDF = async (req, res) => {
     let seller, buyer;
     if (sauda.transaction_type === 'sell') {
       seller = {
-        name: 'Shree Goodluck Oil & Cotton Ind',
+        name: 'Shree Goodluck Oil & Cotton Ind (Unjha)',
         address: company.address,
         city: company.city,
         state: company.state,
@@ -356,7 +356,7 @@ const generateSaudaNotePDF = async (req, res) => {
       };
     } else {
       buyer = {
-        name: 'Shree Goodluck Oil & Cotton Ind',
+        name: 'Shree Goodluck Oil & Cotton Ind (Unjha)',
         address: company.address,
         city: company.city,
         state: company.state,
@@ -391,11 +391,12 @@ const generateSaudaNotePDF = async (req, res) => {
     const contentWidth = pageWidth - (2 * margin);
 
     // Header - Company Information (matching CONTRACT CONFIRMATION format)
-    doc.fontSize(18).font('Helvetica-Bold').fillColor('#000000');
+    doc.fontSize(18).font('Helvetica-Bold').fillColor('#000080'); // Dark blue for company name
     // Convert company name to proper case (first letter of each word capitalized)
     const companyName = company.company_name || 'Hardik Canvassing';
     const properCaseName = companyName.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
     doc.text(properCaseName, margin, 30, { align: 'center', width: contentWidth });
+    doc.fillColor('#000000'); // Reset to black for rest of document
     
     doc.fontSize(12).font('Helvetica').fillColor('#000000');
     doc.text(company.business_type || 'Brokers in Edible Oil, Oilcakes Etc.,', margin, 55, { align: 'center', width: contentWidth });
@@ -431,10 +432,13 @@ const generateSaudaNotePDF = async (req, res) => {
     const drawKeyValue = (key, value, currentY, isName = false) => {
       doc.fontSize(10).font('Helvetica');
       
+      // Convert key to proper case (first letter capital only)
+      const properCaseKey = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
+      
       // Right-align the key to the colon
-      const keyWidth = doc.widthOfString(key);
+      const keyWidth = doc.widthOfString(properCaseKey);
       const keyXAligned = colonX - keyWidth - 5; // 5px gap from colon
-      doc.text(key, keyXAligned, currentY);
+      doc.text(properCaseKey, keyXAligned, currentY);
       
       doc.text(':', colonX, currentY);
       
@@ -445,7 +449,7 @@ const generateSaudaNotePDF = async (req, res) => {
       }
       
       // Left-align the value to the right of the colon
-      const valueXAligned = colonX + 5; // 5px gap from colon
+      const valueXAligned = colonX + 9; // 5px gap from colon
       doc.text(value, valueXAligned, currentY);
       
       // Reset color
