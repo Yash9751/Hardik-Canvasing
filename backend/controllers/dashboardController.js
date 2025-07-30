@@ -231,6 +231,7 @@ const getTodaysPurchaseDetails = async (req, res) => {
         s.quantity_packs as quantity,
         s.rate_per_10kg as rate,
         s.total_value,
+        ep.plant_name as ex_plant_name,
         s.created_at,
         ROUND(l.vajan_kg / 1000, 2) as loading_quantity,
         s.rate_per_10kg as loading_rate,
@@ -238,6 +239,7 @@ const getTodaysPurchaseDetails = async (req, res) => {
       FROM sauda s
       LEFT JOIN parties party ON s.party_id = party.id
       LEFT JOIN items item ON s.item_id = item.id
+      LEFT JOIN ex_plants ep ON s.ex_plant_id = ep.id
       LEFT JOIN loading l ON s.id = l.sauda_id
       WHERE DATE(s.created_at) = $1 AND s.transaction_type = 'purchase'
       ORDER BY s.created_at DESC
@@ -267,6 +269,7 @@ const getTodaysSellDetails = async (req, res) => {
         s.quantity_packs as quantity,
         s.rate_per_10kg as rate,
         s.total_value,
+        ep.plant_name as ex_plant_name,
         s.created_at,
         ROUND(l.vajan_kg / 1000, 2) as loading_quantity,
         s.rate_per_10kg as loading_rate,
@@ -274,6 +277,7 @@ const getTodaysSellDetails = async (req, res) => {
       FROM sauda s
       LEFT JOIN parties party ON s.party_id = party.id
       LEFT JOIN items item ON s.item_id = item.id
+      LEFT JOIN ex_plants ep ON s.ex_plant_id = ep.id
       LEFT JOIN loading l ON s.id = l.sauda_id
       WHERE DATE(s.created_at) = $1 AND s.transaction_type = 'sell'
       ORDER BY s.created_at DESC
