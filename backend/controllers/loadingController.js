@@ -44,12 +44,13 @@ const getAllLoading = async (req, res) => {
   try {
     const { sauda_id, date } = req.query;
     let query = `
-      SELECT l.*, s.sauda_no, s.transaction_type, p.party_name, i.item_name, ep.plant_name
+      SELECT l.*, s.sauda_no, s.transaction_type, p.party_name, i.item_name, ep.plant_name, t.transport_name
       FROM loading l
       LEFT JOIN sauda s ON l.sauda_id = s.id
       LEFT JOIN parties p ON s.party_id = p.id
       LEFT JOIN items i ON s.item_id = i.id
       LEFT JOIN ex_plants ep ON s.ex_plant_id = ep.id
+      LEFT JOIN transports t ON l.transport_id = t.id
       WHERE 1=1
     `;
     const params = [];
@@ -80,12 +81,13 @@ const getLoadingById = async (req, res) => {
   try {
     const { id } = req.params;
     const result = await db.query(`
-      SELECT l.*, s.sauda_no, s.transaction_type, p.party_name, i.item_name, ep.plant_name
+      SELECT l.*, s.sauda_no, s.transaction_type, p.party_name, i.item_name, ep.plant_name, t.transport_name
       FROM loading l
       LEFT JOIN sauda s ON l.sauda_id = s.id
       LEFT JOIN parties p ON s.party_id = p.id
       LEFT JOIN items i ON s.item_id = i.id
       LEFT JOIN ex_plants ep ON s.ex_plant_id = ep.id
+      LEFT JOIN transports t ON l.transport_id = t.id
       WHERE l.id = $1
     `, [id]);
     
@@ -103,15 +105,15 @@ const getLoadingById = async (req, res) => {
 // Create new loading entry
 const createLoading = async (req, res) => {
   try {
-    const { sauda_id, loading_date, vajan_kg, note } = req.body;
+    const { sauda_id, loading_date, vajan_kg, note, transport_id, tanker_number } = req.body;
 
     if (!sauda_id || !loading_date || !vajan_kg) {
       return res.status(400).json({ error: 'Required fields are missing' });
     }
 
     const result = await db.query(
-      'INSERT INTO loading (sauda_id, loading_date, vajan_kg, note) VALUES ($1, $2, $3, $4) RETURNING *',
-      [sauda_id, loading_date, vajan_kg, note]
+      'INSERT INTO loading (sauda_id, loading_date, vajan_kg, note, transport_id, tanker_number) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [sauda_id, loading_date, vajan_kg, note, transport_id, tanker_number]
     );
 
     // Get item_id and ex_plant_id from sauda
@@ -135,11 +137,11 @@ const createLoading = async (req, res) => {
 const updateLoading = async (req, res) => {
   try {
     const { id } = req.params;
-    const { sauda_id, loading_date, vajan_kg, note } = req.body;
+    const { sauda_id, loading_date, vajan_kg, note, transport_id, tanker_number } = req.body;
 
     const result = await db.query(
-      'UPDATE loading SET sauda_id = $1, loading_date = $2, vajan_kg = $3, note = $4 WHERE id = $5 RETURNING *',
-      [sauda_id, loading_date, vajan_kg, note, id]
+      'UPDATE loading SET sauda_id = $1, loading_date = $2, vajan_kg = $3, note = $4, transport_id = $5, tanker_number = $6 WHERE id = $7 RETURNING *',
+      [sauda_id, loading_date, vajan_kg, note, transport_id, tanker_number, id]
     );
 
     if (result.rows.length === 0) {
