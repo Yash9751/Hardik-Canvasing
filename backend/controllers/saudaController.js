@@ -51,7 +51,8 @@ const getAllSauda = async (req, res) => {
   try {
     const { transaction_type, item_id, party_id, date } = req.query;
     let query = `
-      SELECT s.*, p.party_name, p.mobile_number as party_mobile, i.item_name, ep.plant_name as ex_plant_name, b.broker_name,
+      SELECT s.*, p.party_name, p.mobile_number as party_mobile, p.city as party_city, p.gst_no as party_gstin, 
+             i.item_name, ep.plant_name as ex_plant_name, b.broker_name,
              dc.condition_name as delivery_condition, pc.condition_name as payment_condition
       FROM sauda s
       LEFT JOIN parties p ON s.party_id = p.id
@@ -104,7 +105,8 @@ const getSaudaById = async (req, res) => {
   try {
     const { id } = req.params;
     const result = await db.query(`
-      SELECT s.*, p.party_name, p.mobile_number as party_mobile, i.item_name, ep.plant_name as ex_plant_name, b.broker_name,
+      SELECT s.*, p.party_name, p.mobile_number as party_mobile, p.city as party_city, p.gst_no as party_gstin,
+             i.item_name, ep.plant_name as ex_plant_name, b.broker_name,
              dc.condition_name as delivery_condition, pc.condition_name as payment_condition
       FROM sauda s
       LEFT JOIN parties p ON s.party_id = p.id
