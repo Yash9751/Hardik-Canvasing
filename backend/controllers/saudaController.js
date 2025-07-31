@@ -547,7 +547,8 @@ const generateSaudaNotePDF = async (req, res) => {
     doc.text('Thanking You,', margin + contentWidth - 100, footerY + 15, { width: 100, align: 'right' });
     doc.fontSize(10).font('Helvetica-Bold');
     doc.fillColor('#000080'); // Dark blue color
-    doc.text('For, Hardik Canvassing, Ahmedabad', margin + contentWidth - 200, footerY + 30, { width: 200, align: 'right' });
+    doc.text('For, Hardik Canvassing', margin + contentWidth - 200, footerY + 30, { width: 200, align: 'right' });
+    doc.text('Ahmedabad', margin + contentWidth - 200, footerY + 45, { width: 200, align: 'right' });
     doc.fillColor('#000000'); // Reset to black
     
     // Bottom note
