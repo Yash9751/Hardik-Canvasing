@@ -565,6 +565,101 @@ const generateSaudaNotePDF = async (req, res) => {
   }
 };
 
+// Generate message format for WhatsApp/communication
+const generateSaudaMessage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Get sauda details with related data
+    const saudaResult = await db.query(`
+      SELECT s.*, 
+             p.party_name, p.city as party_city, p.gst_no as party_gstin,
+             i.item_name,
+             ep.plant_name as ex_plant_name,
+             c.company_name, c.city, c.mobile_number,
+             dc.condition_name as delivery_condition, pc.condition_name as payment_condition
+      FROM sauda s
+      LEFT JOIN parties p ON s.party_id = p.id
+      LEFT JOIN items i ON s.item_id = i.id
+      LEFT JOIN ex_plants ep ON s.ex_plant_id = ep.id
+      LEFT JOIN company_profile c ON c.id = 1
+      LEFT JOIN delivery_conditions dc ON s.delivery_condition_id = dc.id
+      LEFT JOIN payment_conditions pc ON s.payment_condition_id = pc.id
+      WHERE s.id = $1
+    `, [id]);
+    
+    if (saudaResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Sauda not found' });
+    }
+    
+    const sauda = saudaResult.rows[0];
+    const company = saudaResult.rows[0];
+    
+    // Determine seller and buyer based on transaction type
+    let seller, buyer;
+    if (sauda.transaction_type === 'sell') {
+      seller = { name: 'Shree Goodluck Oil & Cotton Ind', city: company.city };
+      buyer = { name: sauda.party_name, city: sauda.party_city, gstin: sauda.party_gstin };
+    } else {
+      buyer = { name: 'Shree Goodluck Oil & Cotton Ind', city: company.city };
+      seller = { name: sauda.party_name, city: sauda.party_city, gstin: sauda.party_gstin };
+    }
+    
+    // Format contract number (remove "20" prefix)
+    const contractNumber = sauda.sauda_no ? sauda.sauda_no.replace(/^20/, '') : 'N/A';
+    
+    // Format date
+    const saudaDate = sauda.date ? new Date(sauda.date).toLocaleDateString('en-GB') : 'N/A';
+    
+    // Format quantity with MT suffix
+    const quantity = `${parseFloat(sauda.quantity_packs) || 0} MT`;
+    
+    // Format rate
+    const rate = `${(parseFloat(sauda.rate_per_10kg) || 0).toFixed(2)} (Per 10KGs) + GST`;
+    
+    // Format delivery and payment conditions
+    const delivery = sauda.delivery_condition || 'Ready to Weekly';
+    const payment = sauda.payment_condition || '2 nd Day';
+    
+    // Format loading due date
+    const loadingDate = sauda.loading_due_date ? new Date(sauda.loading_due_date).toLocaleDateString('en-GB') : 'N/A';
+    
+    // Format remarks
+    const remarks = sauda.remarks || '';
+    
+    // Generate the message in the exact format you requested
+    const message = `Please Find Contract Confirmation Sir
+
+Sauda Date : ${saudaDate}
+Confirmed Sauda : ${contractNumber}
+
+Seller : ${seller.name} (${seller.city})
+Buyer : ${buyer.name} (${buyer.city})
+
+Item : ${sauda.item_name}
+Pack : ${quantity}
+Rate : ${rate}
+
+Del. : ${delivery}
+Pay. : ${payment}
+
+Please Try to Load Before : ${loadingDate}
+
+Note : ${remarks}
+
+${sauda.transaction_type === 'sell' ? 'Buyer' : 'Seller'} GSTIN : ${sauda.transaction_type === 'sell' ? buyer.gstin : seller.gstin}
+
+(Reply with Ok).
+*If any mistake, Reply!*
+Call - ${company.mobile_number || '9824711157'}`;
+    
+    res.json({ message });
+  } catch (error) {
+    console.error('Error generating Sauda message:', error);
+    res.status(500).json({ error: 'Failed to generate message: ' + error.message });
+  }
+};
+
 module.exports = {
   getAllSauda,
   getSaudaById,
@@ -573,5 +668,6 @@ module.exports = {
   deleteSauda,
   getPendingSauda,
   getNextSaudaNumber,
-  generateSaudaNotePDF
+  generateSaudaNotePDF,
+  generateSaudaMessage
 }; 
