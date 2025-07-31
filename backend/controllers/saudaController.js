@@ -439,7 +439,7 @@ const generateSaudaNotePDF = async (req, res) => {
       
       // Handle specific key transformations
       if (key === 'CONTRACT NO') properCaseKey = 'Contract No';
-      else if (key === 'CONTRACT DATE') properCaseKey = 'ContractDate';
+      else if (key === 'CONTRACT DATE') properCaseKey = 'Contract Date';
       else if (key === 'SELLER NAME') properCaseKey = 'Seller Name';
       else if (key === 'BUYER NAME') properCaseKey = 'Buyer Name';
       else if (key === 'MATERIAL') properCaseKey = 'Commodity';
