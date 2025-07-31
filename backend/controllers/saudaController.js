@@ -403,28 +403,35 @@ const generateSaudaNotePDF = async (req, res) => {
     doc.fontSize(12).font('Helvetica').fillColor('#000000');
     doc.text(company.business_type || 'Brokers in Edible Oil, Oilcakes Etc.,', margin, 55, { align: 'center', width: contentWidth });
     
-    // Full address from company profile
+    // Full address from company profile - split into 2 lines
     const fullAddress = company.address || 'A 1503, Privilon, Ambli BRT Road, Iskon Crossroads, Ahmedabad, Gujarat 380054, India';
-    doc.text(fullAddress, margin, 75, { align: 'center', width: contentWidth });
+    
+    // Split address at comma to create 2 lines
+    const addressParts = fullAddress.split(',');
+    const firstLine = addressParts.slice(0, -2).join(',').trim(); // Everything except last 2 parts
+    const secondLine = addressParts.slice(-2).join(',').trim(); // Last 2 parts (city, state, pincode, country)
+    
+    doc.text(firstLine, margin, 75, { align: 'center', width: contentWidth });
+    doc.text(secondLine, margin, 95, { align: 'center', width: contentWidth });
     
     // Contact information - center aligned with proper spacing
     doc.fontSize(10);
     
-    doc.text(`Mobile: ${company.mobile_number || '9824711157'}`, margin, 115, { align: 'center', width: contentWidth });
-    doc.text(`e-Mail Id: ${company.email || 'hcunjha2018@gmail.com'}`, margin, 135, { align: 'center', width: contentWidth });
+    doc.text(`Mobile: ${company.mobile_number || '9824711157'}`, margin, 135, { align: 'center', width: contentWidth });
+    doc.text(`e-Mail Id: ${company.email || 'hcunjha2018@gmail.com'}`, margin, 155, { align: 'center', width: contentWidth });
 
     // Black bar with CONTRACT CONFIRMATION title
-    doc.rect(margin, 155, contentWidth, 25).fill('#000000');
+    doc.rect(margin, 175, contentWidth, 25).fill('#000000');
     doc.fontSize(16).font('Helvetica-Bold').fillColor('#FFFFFF');
-    doc.text('Contract Confirmation', margin, 165, { align: 'center', width: contentWidth });
+    doc.text('Contract Confirmation', margin, 185, { align: 'center', width: contentWidth });
     doc.fillColor('#000000'); // Reset to black for rest of document
     
     // Introductory paragraph
     doc.fontSize(10).font('Helvetica').fillColor('#000000');
-    doc.text('We hereby inform you that, this contract sale / purchase business was concluded today over the telephonic conversation for below commodity.', margin, 195, { width: contentWidth });
+    doc.text('We hereby inform you that, this contract sale / purchase business was concluded today over the telephonic conversation for below commodity.', margin, 215, { width: contentWidth });
 
     // Contract Details - Key-value pairs format with aligned colons
-    let y = 225;
+    let y = 245;
     const keyX = margin + 10;
     const colonX = margin + 140; // Fixed position for all colons
     const valueX = margin + 150; // Start values right after colons
