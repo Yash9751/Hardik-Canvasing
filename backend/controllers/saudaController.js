@@ -543,10 +543,12 @@ const generateSaudaNotePDF = async (req, res) => {
     // Right side - Company signature (adjusted Y position to prevent overlap)
     const footerY = y - 15; // Use separate variable for right side
     doc.fontSize(8).font('Helvetica');
-    doc.text('E. & O.E.', margin + contentWidth - 100, footerY, { width: 100, align: 'right' });
+    
     doc.text('Thanking You,', margin + contentWidth - 100, footerY + 15, { width: 100, align: 'right' });
     doc.fontSize(10).font('Helvetica-Bold');
-    doc.text(`For, ${company.company_name || 'HARDIK CANVASSING'}, ${company.city || 'AHMEDABAD'}`, margin + contentWidth - 200, footerY + 30, { width: 200, align: 'right' });
+    doc.fillColor('#000080'); // Dark blue color
+    doc.text('For, Hardik Canvassing, Ahmedabad', margin + contentWidth - 200, footerY + 30, { width: 200, align: 'right' });
+    doc.fillColor('#000000'); // Reset to black
     
     // Bottom note
     y += 100;
