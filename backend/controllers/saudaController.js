@@ -449,7 +449,7 @@ const generateSaudaNotePDF = async (req, res) => {
       }
       
       // Left-align the value to the right of the colon
-      const valueXAligned = colonX + 9; // 5px gap from colon
+      const valueXAligned = colonX + 9; // 9px gap from colon
       doc.text(value, valueXAligned, currentY);
       
       // Reset color
