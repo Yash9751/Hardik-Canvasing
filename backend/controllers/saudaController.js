@@ -403,8 +403,8 @@ const generateSaudaNotePDF = async (req, res) => {
     doc.fontSize(12).font('Helvetica').fillColor('#000000');
     doc.text(company.business_type || 'Brokers in Edible Oil, Oilcakes Etc.,', margin, 55, { align: 'center', width: contentWidth });
     
-    // Full address in one line - fixed construction
-    const fullAddress = `${company.address || 'A 1503, Privilon, Ambli BRT Road, Iskon Crossroads,'},`;
+    // Full address from company profile
+    const fullAddress = company.address || 'A 1503, Privilon, Ambli BRT Road, Iskon Crossroads, Ahmedabad, Gujarat 380054, India';
     doc.text(fullAddress, margin, 75, { align: 'center', width: contentWidth });
     
     // Contact information - center aligned with proper spacing
@@ -416,12 +416,12 @@ const generateSaudaNotePDF = async (req, res) => {
     // Black bar with CONTRACT CONFIRMATION title
     doc.rect(margin, 155, contentWidth, 25).fill('#000000');
     doc.fontSize(16).font('Helvetica-Bold').fillColor('#FFFFFF');
-    doc.text('CONTRACT CONFIRMATION', margin, 165, { align: 'center', width: contentWidth });
+    doc.text('Contract Confirmation', margin, 165, { align: 'center', width: contentWidth });
     doc.fillColor('#000000'); // Reset to black for rest of document
     
     // Introductory paragraph
     doc.fontSize(10).font('Helvetica').fillColor('#000000');
-    doc.text('We hereby inform you that, this contract sale / purchase business was concluded today over the telephonic conversation for below commidity.', margin, 195, { width: contentWidth });
+    doc.text('We hereby inform you that, this contract sale / purchase business was concluded today over the telephonic conversation for below commodity.', margin, 195, { width: contentWidth });
 
     // Contract Details - Key-value pairs format with aligned colons
     let y = 225;
