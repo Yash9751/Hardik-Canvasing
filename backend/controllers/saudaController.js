@@ -502,7 +502,7 @@ const generateSaudaNotePDF = async (req, res) => {
     drawKeyValue('QUANTITY', `${parseFloat(sauda.quantity_packs) || 0} MT`, y);
     
     y += lineHeight;
-    drawKeyValue('RATE', `${(parseFloat(sauda.rate_per_10kg) || 0).toFixed(2)} PER 10 KG + IGST, (${sauda.ex_plant_name || 'Ex Plant'})`, y);
+    drawKeyValue('RATE', `${(parseFloat(sauda.rate_per_10kg) || 0).toFixed(2)} PER 10 KG + GST, (${sauda.ex_plant_name || 'Ex Plant'})`, y);
     
     y += lineHeight;
     drawKeyValue('DELIVERY PERIOD', sauda.delivery_condition || 'N/A', y);
