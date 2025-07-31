@@ -417,8 +417,8 @@ const generateSaudaNotePDF = async (req, res) => {
     // Contact information - center aligned with proper spacing
     doc.fontSize(10);
     
-    doc.text(`Mobile: ${company.mobile_number || '9824711157'}`, margin, 130, { align: 'center', width: contentWidth });
-    doc.text(`e-Mail Id: ${company.email || 'hcunjha2018@gmail.com'}`, margin, 150, { align: 'center', width: contentWidth });
+    doc.text(`Mobile: ${company.mobile_number || '9824711157'}`, margin, 120, { align: 'center', width: contentWidth });
+    doc.text(`e-Mail Id: ${company.email || 'hcunjha2018@gmail.com'}`, margin, 140, { align: 'center', width: contentWidth });
 
     // Black bar with CONTRACT CONFIRMATION title
     doc.rect(margin, 175, contentWidth, 25).fill('#000000');
