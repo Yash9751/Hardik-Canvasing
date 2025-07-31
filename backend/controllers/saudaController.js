@@ -432,11 +432,8 @@ const generateSaudaNotePDF = async (req, res) => {
     const drawKeyValue = (key, value, currentY, isName = false) => {
       doc.fontSize(10).font('Helvetica');
       
-      // Convert key to proper case (first letter capital only) but preserve acronyms like GSTIN
-      const properCaseKey = key.split(' ').map(word => {
-        if (word === 'GSTIN') return 'GSTIN';
-        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-      }).join(' ');
+      // Convert key to proper case (first letter capital only)
+      const properCaseKey = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
       
       // Right-align the key to the colon
       const keyWidth = doc.widthOfString(properCaseKey);
@@ -550,7 +547,7 @@ const generateSaudaNotePDF = async (req, res) => {
     doc.text(`For, ${company.company_name || 'HARDIK CANVASSING'}, ${company.city || 'AHMEDABAD'}`, margin + contentWidth - 200, footerY + 30, { width: 200, align: 'right' });
     
     // Bottom note
-    y += 150;
+    y += 100;
     doc.fontSize(5).font('Helvetica');
     doc.text('This is computer generated document and hence no signature required', margin, y, { align: 'center', width: contentWidth });
 
@@ -568,98 +565,6 @@ const generateSaudaNotePDF = async (req, res) => {
   }
 };
 
-// Generate message format for WhatsApp/communication
-const generateSaudaMessage = async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    // Get sauda details with related data
-    const saudaResult = await db.query(`
-      SELECT s.*, 
-             p.party_name, p.city as party_city, p.gstin as party_gstin,
-             i.item_name,
-             ep.plant_name as ex_plant_name,
-             c.company_name, c.city, c.mobile_number
-      FROM sauda s
-      LEFT JOIN parties p ON s.party_id = p.id
-      LEFT JOIN items i ON s.item_id = i.id
-      LEFT JOIN ex_plants ep ON s.ex_plant_id = ep.id
-      LEFT JOIN company_profile c ON c.id = 1
-      WHERE s.id = $1
-    `, [id]);
-
-    if (saudaResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Sauda not found' });
-    }
-
-    const sauda = saudaResult.rows[0];
-    const company = saudaResult.rows[0];
-
-    // Determine seller and buyer based on transaction type
-    let seller, buyer;
-    if (sauda.transaction_type === 'sell') {
-      seller = { name: 'Shree Goodluck Oil & Cotton Ind', city: company.city };
-      buyer = { name: sauda.party_name, city: sauda.party_city, gstin: sauda.party_gstin };
-    } else {
-      buyer = { name: 'Shree Goodluck Oil & Cotton Ind', city: company.city };
-      seller = { name: sauda.party_name, city: sauda.party_city, gstin: sauda.party_gstin };
-    }
-
-    // Format contract number (remove "20" prefix)
-    const contractNumber = sauda.sauda_no ? sauda.sauda_no.replace(/^20/, '') : 'N/A';
-    
-    // Format date
-    const saudaDate = sauda.date ? new Date(sauda.date).toLocaleDateString('en-GB') : 'N/A';
-    
-    // Format quantity with MT suffix
-    const quantity = `${parseFloat(sauda.quantity_packs) || 0} MT`;
-    
-    // Format rate
-    const rate = `${(parseFloat(sauda.rate_per_10kg) || 0).toFixed(2)} (Per 10KGs) + GST`;
-    
-    // Format delivery and payment conditions
-    const delivery = sauda.delivery_condition || 'Ready to Weekly';
-    const payment = sauda.payment_condition || '2 nd Day';
-    
-    // Format loading due date
-    const loadingDate = sauda.loading_due_date ? new Date(sauda.loading_due_date).toLocaleDateString('en-GB') : 'N/A';
-    
-    // Format remarks
-    const remarks = sauda.remarks || '';
-    
-    // Generate the message
-    const message = `Please Find Contract Confirmation Sir
-
-Sauda Date : ${saudaDate}
-Confirmed Sauda : ${contractNumber}
-
-Seller : ${seller.name} (${seller.city})
-Buyer : ${buyer.name} (${buyer.city})
-
-Item : ${sauda.item_name}
-Pack : ${quantity}
-Rate : ${rate}
-
-Del. : ${delivery}
-Pay. : ${payment}
-
-Please Try to Load Before : ${loadingDate}
-
-Note : ${remarks}
-
-${sauda.transaction_type === 'sell' ? 'Buyer' : 'Seller'} GSTIN : ${sauda.transaction_type === 'sell' ? buyer.gstin : seller.gstin}
-
-(Reply with Ok).
-*If any mistake, Reply!*
-Call - ${company.mobile_number || '9824711157'}`;
-
-    res.json({ message });
-  } catch (error) {
-    console.error('Error generating Sauda message:', error);
-    res.status(500).json({ error: 'Failed to generate message: ' + error.message });
-  }
-};
-
 module.exports = {
   getAllSauda,
   getSaudaById,
@@ -668,6 +573,5 @@ module.exports = {
   deleteSauda,
   getPendingSauda,
   getNextSaudaNumber,
-  generateSaudaNotePDF,
-  generateSaudaMessage
+  generateSaudaNotePDF
 }; 
