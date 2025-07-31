@@ -432,8 +432,11 @@ const generateSaudaNotePDF = async (req, res) => {
     const drawKeyValue = (key, value, currentY, isName = false) => {
       doc.fontSize(10).font('Helvetica');
       
-      // Convert key to proper case (first letter capital only)
-      const properCaseKey = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
+      // Convert key to proper case (first letter capital only) but preserve acronyms like GSTIN
+      const properCaseKey = key.split(' ').map(word => {
+        if (word === 'GSTIN') return 'GSTIN';
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      }).join(' ');
       
       // Right-align the key to the colon
       const keyWidth = doc.widthOfString(properCaseKey);
@@ -479,7 +482,7 @@ const generateSaudaNotePDF = async (req, res) => {
     drawKeyValue('MATERIAL', sauda.item_name || 'N/A', y);
     
     y += lineHeight;
-    drawKeyValue('QUANTITY', `${parseFloat(sauda.quantity_packs) || 0} TON`, y);
+    drawKeyValue('QUANTITY', `${parseFloat(sauda.quantity_packs) || 0} MT`, y);
     
     y += lineHeight;
     drawKeyValue('RATE', `${(parseFloat(sauda.rate_per_10kg) || 0).toFixed(2)} PER 10 KG + IGST, (${sauda.ex_plant_name || 'Ex Plant'})`, y);
@@ -547,7 +550,7 @@ const generateSaudaNotePDF = async (req, res) => {
     doc.text(`For, ${company.company_name || 'HARDIK CANVASSING'}, ${company.city || 'AHMEDABAD'}`, margin + contentWidth - 200, footerY + 30, { width: 200, align: 'right' });
     
     // Bottom note
-    y += 50;
+    y += 150;
     doc.fontSize(5).font('Helvetica');
     doc.text('This is computer generated document and hence no signature required', margin, y, { align: 'center', width: contentWidth });
 
