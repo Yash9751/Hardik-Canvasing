@@ -533,11 +533,11 @@ const generateSaudaNotePDF = async (req, res) => {
     doc.moveTo(margin, y).lineTo(margin + contentWidth, y).stroke();
     
     // Other Terms section
-    y += 25; // Increased spacing before Other Terms
+    y += 20; // Reduced spacing before Other Terms
     doc.fontSize(10).font('Helvetica-Bold');
     doc.text('Other Terms:', margin, y);
     
-    y += 25; // Increased spacing after Other Terms title
+    y += 20; // Reduced spacing after Other Terms title
     doc.fontSize(9).font('Helvetica');
     
     // Other terms as bullet points with better spacing
@@ -551,10 +551,10 @@ const generateSaudaNotePDF = async (req, res) => {
     
     terms.forEach((term, index) => {
       if (term.trim() === '') {
-        y += 12; // Less spacing for empty lines
+        y += 8; // Reduced spacing for empty lines
       } else {
         doc.text(` ${term}`, margin + 10, y, { width: contentWidth - 20 });
-        y += 22; // Increased spacing between terms
+        y += 18; // Reduced spacing between terms
       }
     });
     
@@ -576,8 +576,8 @@ const generateSaudaNotePDF = async (req, res) => {
     doc.text('Ahmedabad', margin + contentWidth - 200, footerY + 45, { width: 200, align: 'right' });
     doc.fillColor('#000000'); // Reset to black
     
-    // Bottom note
-    y += 90;
+    // Bottom note - reduced spacing to keep on first page
+    y += 60;
     doc.fontSize(5).font('Helvetica');
     doc.text('This is computer generated document and hence no signature required', margin, y, { align: 'center', width: contentWidth });
 
