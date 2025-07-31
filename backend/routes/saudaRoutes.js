@@ -14,6 +14,9 @@ router.get('/next-number', saudaController.getNextSaudaNumber);
 // Download Sauda Note PDF - This must come before /:id route
 router.get('/:id/pdf', saudaController.generateSaudaNotePDF);
 
+// Generate Sauda Message - This must come before /:id route
+router.get('/:id/message', saudaController.generateSaudaMessage);
+
 // Get sauda by ID
 router.get('/:id', saudaController.getSaudaById);
 
