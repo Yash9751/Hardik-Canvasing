@@ -126,7 +126,7 @@ const generatePlusMinusForDate = async (date) => {
       const sellQuantityPacks = parseFloat(sell.total_quantity_packs) || 0;
       const sellQuantityKg = parseFloat(sell.total_quantity_kg) || 0;
       const avgBuyRate = buyQuantityKg > 0 ? buyTotal / buyQuantityKg * 10 : 0; // per 10kg
-      const avgSellRate = sellQuantityKg > 0 ? sellTotal / sellQuantityKg * 10 : 0; // per 10kg
+      const avgSellRate = sellQuantityPacks > 0 ? sellTotal / (sellQuantityPacks * 1000) * 10 : 0; // per 10kg
       // Calculate profit using cumulative avg buy price
       let profit = 0;
       if (sellQuantityKg > 0) {
