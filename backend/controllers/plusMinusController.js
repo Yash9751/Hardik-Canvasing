@@ -18,11 +18,7 @@ const getDailyPlusMinus = async (req, res) => {
             SUM(pm.buy_total) / SUM(pm.buy_quantity * 1000) * 10
           ELSE 0 
         END as avg_buy_rate,
-        CASE 
-          WHEN SUM(pm.sell_quantity) > 0 THEN 
-            SUM(pm.sell_total) / SUM(pm.sell_quantity) * 10
-          ELSE 0 
-        END as avg_sell_rate
+        AVG(pm.avg_sell_rate) as avg_sell_rate
       FROM plus_minus pm
       LEFT JOIN items i ON pm.item_id = i.id
       WHERE 1=1
@@ -245,11 +241,7 @@ const getTodayPlusMinus = async (req, res) => {
             SUM(pm.buy_total) / SUM(pm.buy_quantity * 1000) * 10
           ELSE 0 
         END as avg_buy_rate,
-        CASE 
-          WHEN SUM(pm.sell_quantity * 1000) > 0 THEN 
-            SUM(pm.sell_total) / SUM(pm.sell_quantity * 1000) * 10
-          ELSE 0 
-        END as avg_sell_rate
+        AVG(pm.avg_sell_rate) as avg_sell_rate
       FROM plus_minus pm
       LEFT JOIN items i ON pm.item_id = i.id
       WHERE pm.date = $1
