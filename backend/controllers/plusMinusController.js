@@ -8,15 +8,22 @@ const getDailyPlusMinus = async (req, res) => {
     let query = `
       SELECT 
         pm.date,
-        pm.item_id,
         i.item_name,
-        pm.buy_total,
-        pm.sell_total,
-        pm.profit,
-        pm.buy_quantity,
-        pm.sell_quantity,
-        pm.avg_buy_rate,
-        pm.avg_sell_rate
+        SUM(pm.buy_total) as buy_total,
+        SUM(pm.sell_total) as sell_total,
+        SUM(pm.profit) as profit,
+        SUM(pm.buy_quantity) as buy_quantity,
+        SUM(pm.sell_quantity) as sell_quantity,
+        CASE 
+          WHEN SUM(pm.buy_quantity) > 0 THEN 
+            SUM(pm.buy_total) / SUM(pm.buy_quantity) * 1000
+          ELSE 0 
+        END as avg_buy_rate,
+        CASE 
+          WHEN SUM(pm.sell_quantity) > 0 THEN 
+            SUM(pm.sell_total) / SUM(pm.sell_quantity) * 1000
+          ELSE 0 
+        END as avg_sell_rate
       FROM plus_minus pm
       LEFT JOIN items i ON pm.item_id = i.id
       WHERE 1=1
@@ -33,7 +40,7 @@ const getDailyPlusMinus = async (req, res) => {
       params.push(item_id);
     }
 
-    query += ' ORDER BY pm.date DESC, i.item_name';
+    query += ' GROUP BY pm.date, i.item_name ORDER BY pm.date DESC, i.item_name';
 
     const result = await db.query(query, params);
     res.json(result.rows);
@@ -203,18 +210,26 @@ const getTodayPlusMinus = async (req, res) => {
     
     const query = `
       SELECT 
-        pm.item_id,
         i.item_name,
-        pm.buy_total,
-        pm.sell_total,
-        pm.profit,
-        pm.buy_quantity,
-        pm.sell_quantity,
-        pm.avg_buy_rate,
-        pm.avg_sell_rate
+        SUM(pm.buy_total) as buy_total,
+        SUM(pm.sell_total) as sell_total,
+        SUM(pm.profit) as profit,
+        SUM(pm.buy_quantity) as buy_quantity,
+        SUM(pm.sell_quantity) as sell_quantity,
+        CASE 
+          WHEN SUM(pm.buy_quantity) > 0 THEN 
+            SUM(pm.buy_total) / SUM(pm.buy_quantity) * 1000
+          ELSE 0 
+        END as avg_buy_rate,
+        CASE 
+          WHEN SUM(pm.sell_quantity) > 0 THEN 
+            SUM(pm.sell_total) / SUM(pm.sell_quantity) * 1000
+          ELSE 0 
+        END as avg_sell_rate
       FROM plus_minus pm
       LEFT JOIN items i ON pm.item_id = i.id
       WHERE pm.date = $1
+      GROUP BY i.item_name
       ORDER BY i.item_name
     `;
 
