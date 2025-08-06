@@ -62,7 +62,7 @@ const getDailyPlusMinus = async (req, res) => {
         return {
           ...row,
           buy_quantity: buyQuantityKg / 1000, // Convert back to MT for frontend
-          sell_quantity: sellQuantityPacks, // 1 pack = 1 MT, so use packs directly
+          sell_quantity: sellQuantityKg, // Send in kg as per P&L Information formula
           profit: profit
         };
       });
@@ -278,7 +278,7 @@ const getTodayPlusMinus = async (req, res) => {
       return {
         ...row,
         buy_quantity: buyQuantityKg / 1000, // Convert back to MT for frontend
-        sell_quantity: sellQuantityPacks, // 1 pack = 1 MT, so use packs directly
+        sell_quantity: sellQuantityKg, // Send in kg as per P&L Information formula
         profit: profit
       };
     });
