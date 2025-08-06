@@ -116,7 +116,8 @@ const generatePlusMinusForDate = async (date) => {
         `SELECT 
           COALESCE(SUM(quantity_packs * 1000),0) as total_quantity_kg,
           COALESCE(SUM(quantity_packs),0) as total_quantity_packs,
-          COALESCE(SUM(total_value),0) as total_sell_value
+          COALESCE(SUM(total_value),0) as total_sell_value,
+          COALESCE(AVG(rate_per_10kg),0) as avg_sell_rate
         FROM sauda
         WHERE transaction_type = 'sell' AND item_id = $1 AND ex_plant_id = $2 AND date <= $3`,
         [item_id, ex_plant_id, date]
@@ -130,7 +131,7 @@ const generatePlusMinusForDate = async (date) => {
       const sellQuantityPacks = parseFloat(sell.total_quantity_packs) || 0;
       const sellQuantityKg = parseFloat(sell.total_quantity_kg) || 0;
       const avgBuyRate = buyQuantityKg > 0 ? buyTotal / buyQuantityKg * 10 : 0; // per 10kg
-      const avgSellRate = sellQuantityKg > 0 ? sellTotal / sellQuantityKg * 10 : 0; // per 10kg
+      const avgSellRate = parseFloat(sell.avg_sell_rate) || 0;
       // Calculate profit using cumulative avg buy price
       let profit = 0;
       if (sellQuantityKg > 0) {
