@@ -13,8 +13,9 @@ const pool = new Pool({
   } : false,
   // Connection pool settings
   max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  idleTimeoutMillis: 60000, // Increased from 30s to 60s
+  connectionTimeoutMillis: 10000, // Increased from 2s to 10s
+  acquireTimeoutMillis: 10000, // Add acquire timeout
 });
 
 // Test database connection

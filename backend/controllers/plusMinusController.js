@@ -1,4 +1,5 @@
 const db = require('../db');
+const { retryDatabaseOperation } = require('../middleware/retryMiddleware');
 const puppeteer = require('puppeteer');
 
 const getDailyPlusMinus = async (req, res) => {
@@ -41,7 +42,7 @@ const getDailyPlusMinus = async (req, res) => {
 
     query += ' GROUP BY pm.date, i.item_name ORDER BY pm.date DESC, i.item_name';
 
-    const result = await db.query(query, params);
+    const result = await retryDatabaseOperation(() => db.query(query, params));
     
           // Calculate profit for each item
       const itemsWithProfit = result.rows.map(row => {
@@ -78,9 +79,9 @@ const getDailyPlusMinus = async (req, res) => {
 const generatePlusMinusForDate = async (date) => {
   try {
     // Get all unique item+ex_plant combinations that have any buy or sell up to and including this date
-    const itemsResult = await db.query(`
+    const itemsResult = await retryDatabaseOperation(() => db.query(`
       SELECT DISTINCT item_id, ex_plant_id FROM sauda WHERE date <= $1
-    `, [date]);
+    `, [date]));
 
     const upsertQuery = `
       INSERT INTO plus_minus (date, item_id, ex_plant_id, buy_total, sell_total, profit, buy_quantity, sell_quantity, avg_buy_rate, avg_sell_rate)
@@ -102,7 +103,7 @@ const generatePlusMinusForDate = async (date) => {
     for (const row of itemsResult.rows) {
       const { item_id, ex_plant_id } = row;
       // Cumulative purchase up to and including this date
-      const buyRes = await db.query(
+      const buyRes = await retryDatabaseOperation(() => db.query(
         `SELECT 
           COALESCE(SUM(quantity_packs),0) as total_quantity_packs,
           COALESCE(SUM(quantity_packs * 1000),0) as total_quantity_kg,
@@ -110,9 +111,9 @@ const generatePlusMinusForDate = async (date) => {
         FROM sauda
         WHERE transaction_type = 'purchase' AND item_id = $1 AND ex_plant_id = $2 AND date <= $3`,
         [item_id, ex_plant_id, date]
-      );
+      ));
       // Cumulative sell up to and including this date
-      const sellRes = await db.query(
+      const sellRes = await retryDatabaseOperation(() => db.query(
         `SELECT 
           COALESCE(SUM(quantity_packs * 1000),0) as total_quantity_kg,
           COALESCE(SUM(quantity_packs),0) as total_quantity_packs,
@@ -120,7 +121,7 @@ const generatePlusMinusForDate = async (date) => {
         FROM sauda
         WHERE transaction_type = 'sell' AND item_id = $1 AND ex_plant_id = $2 AND date <= $3`,
         [item_id, ex_plant_id, date]
-      );
+      ));
       const buy = buyRes.rows[0];
       const sell = sellRes.rows[0];
       const buyTotal = parseFloat(buy.total_buy_value) || 0;
