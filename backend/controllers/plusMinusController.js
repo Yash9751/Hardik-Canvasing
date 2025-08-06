@@ -11,17 +11,16 @@ const getDailyPlusMinus = async (req, res) => {
         i.item_name,
         SUM(pm.buy_total) as buy_total,
         SUM(pm.sell_total) as sell_total,
-        SUM(pm.profit) as profit,
-        SUM(pm.buy_quantity) as buy_quantity,
-        SUM(pm.sell_quantity) as sell_quantity,
+        SUM(pm.buy_quantity * 1000) as buy_quantity_kg,
+        SUM(pm.sell_quantity) as sell_quantity_kg,
         CASE 
-          WHEN SUM(pm.buy_quantity) > 0 THEN 
-            SUM(pm.buy_total) / SUM(pm.buy_quantity) * 1000
+          WHEN SUM(pm.buy_quantity * 1000) > 0 THEN 
+            SUM(pm.buy_total) / SUM(pm.buy_quantity * 1000) * 10
           ELSE 0 
         END as avg_buy_rate,
         CASE 
           WHEN SUM(pm.sell_quantity) > 0 THEN 
-            SUM(pm.sell_total) / SUM(pm.sell_quantity) * 1000
+            SUM(pm.sell_total) / SUM(pm.sell_quantity) * 10
           ELSE 0 
         END as avg_sell_rate
       FROM plus_minus pm
@@ -43,7 +42,31 @@ const getDailyPlusMinus = async (req, res) => {
     query += ' GROUP BY pm.date, i.item_name ORDER BY pm.date DESC, i.item_name';
 
     const result = await db.query(query, params);
-    res.json(result.rows);
+    
+    // Calculate profit for each item
+    const itemsWithProfit = result.rows.map(row => {
+      const buyQuantityKg = parseFloat(row.buy_quantity_kg) || 0;
+      const sellQuantityKg = parseFloat(row.sell_quantity_kg) || 0;
+      const avgBuyRate = parseFloat(row.avg_buy_rate) || 0;
+      const avgSellRate = parseFloat(row.avg_sell_rate) || 0;
+      
+      // Calculate profit using the same logic as in generatePlusMinusForDate
+      let profit = 0;
+      if (sellQuantityKg > 0 && avgBuyRate > 0) {
+        const avgSellRatePerKg = avgSellRate / 10;
+        const avgBuyRatePerKg = avgBuyRate / 10;
+        profit = (avgSellRatePerKg - avgBuyRatePerKg) * sellQuantityKg;
+      }
+      
+      return {
+        ...row,
+        buy_quantity: buyQuantityKg / 1000, // Convert back to MT for frontend
+        sell_quantity: sellQuantityKg / 1000, // Convert back to MT for frontend
+        profit: profit
+      };
+    });
+    
+    res.json(itemsWithProfit);
   } catch (error) {
     console.error('Get daily plus minus error:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -213,17 +236,16 @@ const getTodayPlusMinus = async (req, res) => {
         i.item_name,
         SUM(pm.buy_total) as buy_total,
         SUM(pm.sell_total) as sell_total,
-        SUM(pm.profit) as profit,
-        SUM(pm.buy_quantity) as buy_quantity,
-        SUM(pm.sell_quantity) as sell_quantity,
+        SUM(pm.buy_quantity * 1000) as buy_quantity_kg,
+        SUM(pm.sell_quantity) as sell_quantity_kg,
         CASE 
-          WHEN SUM(pm.buy_quantity) > 0 THEN 
-            SUM(pm.buy_total) / SUM(pm.buy_quantity) * 1000
+          WHEN SUM(pm.buy_quantity * 1000) > 0 THEN 
+            SUM(pm.buy_total) / SUM(pm.buy_quantity * 1000) * 10
           ELSE 0 
         END as avg_buy_rate,
         CASE 
           WHEN SUM(pm.sell_quantity) > 0 THEN 
-            SUM(pm.sell_total) / SUM(pm.sell_quantity) * 1000
+            SUM(pm.sell_total) / SUM(pm.sell_quantity) * 10
           ELSE 0 
         END as avg_sell_rate
       FROM plus_minus pm
@@ -235,8 +257,30 @@ const getTodayPlusMinus = async (req, res) => {
 
     const result = await db.query(query, [today]);
 
-    // Calculate totals
-    const totals = result.rows.reduce((acc, row) => {
+    // Calculate profit for each item and totals
+    const itemsWithProfit = result.rows.map(row => {
+      const buyQuantityKg = parseFloat(row.buy_quantity_kg) || 0;
+      const sellQuantityKg = parseFloat(row.sell_quantity_kg) || 0;
+      const avgBuyRate = parseFloat(row.avg_buy_rate) || 0;
+      const avgSellRate = parseFloat(row.avg_sell_rate) || 0;
+      
+      // Calculate profit using the same logic as in generatePlusMinusForDate
+      let profit = 0;
+      if (sellQuantityKg > 0 && avgBuyRate > 0) {
+        const avgSellRatePerKg = avgSellRate / 10;
+        const avgBuyRatePerKg = avgBuyRate / 10;
+        profit = (avgSellRatePerKg - avgBuyRatePerKg) * sellQuantityKg;
+      }
+      
+      return {
+        ...row,
+        buy_quantity: buyQuantityKg / 1000, // Convert back to MT for frontend
+        sell_quantity: sellQuantityKg / 1000, // Convert back to MT for frontend
+        profit: profit
+      };
+    });
+
+    const totals = itemsWithProfit.reduce((acc, row) => {
       acc.totalBuy += parseFloat(row.buy_total);
       acc.totalSell += parseFloat(row.sell_total);
       acc.totalProfit += parseFloat(row.profit);
@@ -245,7 +289,7 @@ const getTodayPlusMinus = async (req, res) => {
 
     res.json({
       date: today,
-      items: result.rows,
+      items: itemsWithProfit,
       totals
     });
   } catch (error) {
