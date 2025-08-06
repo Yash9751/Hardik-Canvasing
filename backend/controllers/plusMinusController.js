@@ -53,7 +53,7 @@ const getDailyPlusMinus = async (req, res) => {
         
         // Calculate profit using the same logic as in generatePlusMinusForDate
         let profit = 0;
-        if (sellQuantityKg > 0 && avgBuyRate > 0) {
+        if (sellQuantityKg > 0) {
           const avgSellRatePerKg = avgSellRate / 10;
           const avgBuyRatePerKg = avgBuyRate / 10;
           profit = (avgSellRatePerKg - avgBuyRatePerKg) * sellQuantityKg;
@@ -134,7 +134,7 @@ const generatePlusMinusForDate = async (date) => {
       const avgSellRate = parseFloat(sell.avg_sell_rate) || 0;
       // Calculate profit using cumulative avg buy price
       let profit = 0;
-      if (sellQuantityKg > 0 && avgBuyRate > 0) {
+      if (sellQuantityKg > 0) {
         const avgSellRatePerKg = avgSellRate / 10;
         const avgBuyRatePerKg = avgBuyRate / 10;
         profit = (avgSellRatePerKg - avgBuyRatePerKg) * sellQuantityKg;
@@ -267,13 +267,13 @@ const getTodayPlusMinus = async (req, res) => {
       const avgBuyRate = parseFloat(row.avg_buy_rate) || 0;
       const avgSellRate = parseFloat(row.avg_sell_rate) || 0;
       
-      // Calculate profit using the same logic as in generatePlusMinusForDate
-      let profit = 0;
-      if (sellQuantityKg > 0 && avgBuyRate > 0) {
-        const avgSellRatePerKg = avgSellRate / 10;
-        const avgBuyRatePerKg = avgBuyRate / 10;
-        profit = (avgSellRatePerKg - avgBuyRatePerKg) * sellQuantityKg;
-      }
+              // Calculate profit using the same logic as in generatePlusMinusForDate
+        let profit = 0;
+        if (sellQuantityKg > 0) {
+          const avgSellRatePerKg = avgSellRate / 10;
+          const avgBuyRatePerKg = avgBuyRate / 10;
+          profit = (avgSellRatePerKg - avgBuyRatePerKg) * sellQuantityKg;
+        }
       
       return {
         ...row,
