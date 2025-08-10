@@ -48,7 +48,7 @@ const getAllStock = async (req, res) => {
   try {
     const { status } = req.query;
     let query = `
-      SELECT s.*, i.item_name, ep.plant_name as ex_plant_name
+      SELECT s.*, i.item_name, i.nick_name, ep.plant_name as ex_plant_name
       FROM stock s
       LEFT JOIN items i ON s.item_id = i.id
       LEFT JOIN ex_plants ep ON s.ex_plant_id = ep.id
@@ -73,7 +73,7 @@ const getStockByItem = async (req, res) => {
     const { ex_plant_id } = req.query;
     
     let query = `
-      SELECT s.*, i.item_name, ep.plant_name as ex_plant_name
+      SELECT s.*, i.item_name, i.nick_name, ep.plant_name as ex_plant_name
       FROM stock s
       LEFT JOIN items i ON s.item_id = i.id
       LEFT JOIN ex_plants ep ON s.ex_plant_id = ep.id
@@ -101,7 +101,7 @@ const getStockByExPlant = async (req, res) => {
   try {
     const { exPlantId } = req.params;
     const result = await db.query(`
-      SELECT s.*, i.item_name, ep.plant_name as ex_plant_name
+      SELECT s.*, i.item_name, i.nick_name, ep.plant_name as ex_plant_name
       FROM stock s
       LEFT JOIN items i ON s.item_id = i.id
       LEFT JOIN ex_plants ep ON s.ex_plant_id = ep.id
@@ -153,7 +153,7 @@ const getStockWithPartyBreakdown = async (req, res) => {
     
     // First, get the main stock data grouped by item and ex-plant
     let stockQuery = `
-      SELECT s.*, i.item_name, ep.plant_name as ex_plant_name
+      SELECT s.*, i.item_name, i.nick_name, ep.plant_name as ex_plant_name
       FROM stock s
       LEFT JOIN items i ON s.item_id = i.id
       LEFT JOIN ex_plants ep ON s.ex_plant_id = ep.id
