@@ -382,10 +382,6 @@ const getFuturePlusMinus = async (req, res) => {
           ELSE 0 END) as completed_sell_packs
         FROM sauda s
         LEFT JOIN items i ON s.item_id = i.id
-        WHERE EXISTS (
-          SELECT 1 FROM loading l 
-          WHERE l.sauda_id = s.id
-        )
         GROUP BY i.id
       )
       SELECT 
