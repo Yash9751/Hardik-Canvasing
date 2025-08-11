@@ -32,14 +32,20 @@ async function recalculateStock(item_id, ex_plant_id) {
   const total_sell_packs = parseInt(sellRes.rows[0].total, 10);
   const loaded_purchase_packs = parseInt(loadedPurchaseRes.rows[0].total, 10);
   const loaded_sell_packs = parseInt(loadedSellRes.rows[0].total, 10);
-  console.log('[recalculateStock] item_id:', item_id, 'ex_plant_id:', ex_plant_id, 'total_purchase_packs:', total_purchase_packs, 'total_sell_packs:', total_sell_packs, 'loaded_purchase_packs:', loaded_purchase_packs, 'loaded_sell_packs:', loaded_sell_packs);
+  
+  // Calculate pending loading
+  const pending_purchase_loading = total_purchase_packs - loaded_purchase_packs;
+  const pending_sell_loading = total_sell_packs - loaded_sell_packs;
+  
+  console.log('[recalculateStock] item_id:', item_id, 'ex_plant_id:', ex_plant_id, 'total_purchase_packs:', total_purchase_packs, 'total_sell_packs:', total_sell_packs, 'loaded_purchase_packs:', loaded_purchase_packs, 'loaded_sell_packs:', loaded_sell_packs, 'pending_purchase_loading:', pending_purchase_loading, 'pending_sell_loading:', pending_sell_loading);
+  
   // Upsert into stock table
   await db.query(
-    `INSERT INTO stock (item_id, ex_plant_id, total_purchase_packs, total_sell_packs, loaded_purchase_packs, loaded_sell_packs, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, NOW())
+    `INSERT INTO stock (item_id, ex_plant_id, total_purchase_packs, total_sell_packs, loaded_purchase_packs, loaded_sell_packs, pending_purchase_loading, pending_sell_loading, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
      ON CONFLICT (item_id, ex_plant_id)
-     DO UPDATE SET total_purchase_packs=$3, total_sell_packs=$4, loaded_purchase_packs=$5, loaded_sell_packs=$6, updated_at=NOW()`,
-    [item_id, ex_plant_id, total_purchase_packs, total_sell_packs, loaded_purchase_packs, loaded_sell_packs]
+     DO UPDATE SET total_purchase_packs=$3, total_sell_packs=$4, loaded_purchase_packs=$5, loaded_sell_packs=$6, pending_purchase_loading=$7, pending_sell_loading=$8, updated_at=NOW()`,
+    [item_id, ex_plant_id, total_purchase_packs, total_sell_packs, loaded_purchase_packs, loaded_sell_packs, pending_purchase_loading, pending_sell_loading]
   );
 }
 
