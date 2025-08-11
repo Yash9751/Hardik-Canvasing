@@ -329,26 +329,88 @@ const getFuturePlusMinus = async (req, res) => {
       SELECT 
         i.item_name,
         i.nick_name,
-        SUM(CASE WHEN s.transaction_type = 'purchase' THEN s.quantity_packs * s.rate_per_10kg * 100 ELSE 0 END) as buy_total,
-        SUM(CASE WHEN s.transaction_type = 'sell' THEN s.quantity_packs * s.rate_per_10kg * 100 ELSE 0 END) as sell_total,
-        SUM(CASE WHEN s.transaction_type = 'purchase' THEN s.quantity_packs ELSE 0 END) as buy_quantity_packs,
-        SUM(CASE WHEN s.transaction_type = 'sell' THEN s.quantity_packs ELSE 0 END) as sell_quantity_packs,
+        SUM(CASE WHEN s.transaction_type = 'purchase' THEN 
+          (s.quantity_packs - COALESCE((
+            SELECT SUM(l.quantity_packs) 
+            FROM loading l 
+            WHERE l.sauda_id = s.id
+          ), 0)) * s.rate_per_10kg * 100 
+        ELSE 0 END) as buy_total,
+        SUM(CASE WHEN s.transaction_type = 'sell' THEN 
+          (s.quantity_packs - COALESCE((
+            SELECT SUM(l.quantity_packs) 
+            FROM loading l 
+            WHERE l.sauda_id = s.id
+          ), 0)) * s.rate_per_10kg * 100 
+        ELSE 0 END) as sell_total,
+        SUM(CASE WHEN s.transaction_type = 'purchase' THEN 
+          (s.quantity_packs - COALESCE((
+            SELECT SUM(l.quantity_packs) 
+            FROM loading l 
+            WHERE l.sauda_id = s.id
+          ), 0))
+        ELSE 0 END) as buy_quantity_packs,
+        SUM(CASE WHEN s.transaction_type = 'sell' THEN 
+          (s.quantity_packs - COALESCE((
+            SELECT SUM(l.quantity_packs) 
+            FROM loading l 
+            WHERE l.sauda_id = s.id
+          ), 0))
+        ELSE 0 END) as sell_quantity_packs,
         CASE 
-          WHEN SUM(CASE WHEN s.transaction_type = 'purchase' THEN s.quantity_packs * 1000 ELSE 0 END) > 0 THEN 
-            SUM(CASE WHEN s.transaction_type = 'purchase' THEN s.quantity_packs * s.rate_per_10kg * 100 ELSE 0 END) / SUM(CASE WHEN s.transaction_type = 'purchase' THEN s.quantity_packs * 1000 ELSE 0 END) * 10
+          WHEN SUM(CASE WHEN s.transaction_type = 'purchase' THEN 
+            (s.quantity_packs - COALESCE((
+              SELECT SUM(l.quantity_packs) 
+              FROM loading l 
+              WHERE l.sauda_id = s.id
+            ), 0)) * 1000 
+          ELSE 0 END) > 0 THEN 
+            SUM(CASE WHEN s.transaction_type = 'purchase' THEN 
+              (s.quantity_packs - COALESCE((
+                SELECT SUM(l.quantity_packs) 
+                FROM loading l 
+                WHERE l.sauda_id = s.id
+              ), 0)) * s.rate_per_10kg * 100 
+            ELSE 0 END) / SUM(CASE WHEN s.transaction_type = 'purchase' THEN 
+              (s.quantity_packs - COALESCE((
+                SELECT SUM(l.quantity_packs) 
+                FROM loading l 
+                WHERE l.sauda_id = s.id
+              ), 0)) * 1000 
+            ELSE 0 END) * 10
           ELSE 0 
         END as avg_buy_rate,
         CASE 
-          WHEN SUM(CASE WHEN s.transaction_type = 'sell' THEN s.quantity_packs * 1000 ELSE 0 END) > 0 THEN 
-            SUM(CASE WHEN s.transaction_type = 'sell' THEN s.quantity_packs * s.rate_per_10kg * 100 ELSE 0 END) / SUM(CASE WHEN s.transaction_type = 'sell' THEN s.quantity_packs * 1000 ELSE 0 END) * 10
+          WHEN SUM(CASE WHEN s.transaction_type = 'sell' THEN 
+            (s.quantity_packs - COALESCE((
+              SELECT SUM(l.quantity_packs) 
+              FROM loading l 
+              WHERE l.sauda_id = s.id
+            ), 0)) * 1000 
+          ELSE 0 END) > 0 THEN 
+            SUM(CASE WHEN s.transaction_type = 'sell' THEN 
+              (s.quantity_packs - COALESCE((
+                SELECT SUM(l.quantity_packs) 
+                FROM loading l 
+                WHERE l.sauda_id = s.id
+              ), 0)) * s.rate_per_10kg * 100 
+            ELSE 0 END) / SUM(CASE WHEN s.transaction_type = 'sell' THEN 
+              (s.quantity_packs - COALESCE((
+                SELECT SUM(l.quantity_packs) 
+                FROM loading l 
+                WHERE l.sauda_id = s.id
+              ), 0)) * 1000 
+            ELSE 0 END) * 10
           ELSE 0 
         END as avg_sell_rate
       FROM sauda s
       LEFT JOIN items i ON s.item_id = i.id
-      WHERE EXISTS (
-        SELECT 1 FROM loading l 
-        WHERE l.sauda_id = s.id 
-        AND l.quantity_packs < s.quantity_packs
+      WHERE (
+        s.quantity_packs > COALESCE((
+          SELECT SUM(l.quantity_packs) 
+          FROM loading l 
+          WHERE l.sauda_id = s.id
+        ), 0)
       )
       GROUP BY i.id, i.item_name, i.nick_name
       ORDER BY i.item_name
