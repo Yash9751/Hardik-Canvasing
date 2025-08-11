@@ -10,6 +10,7 @@ const getDailyPlusMinus = async (req, res) => {
       SELECT 
         pm.date,
         i.item_name,
+        i.nick_name,
         SUM(pm.buy_total) as buy_total,
         SUM(pm.sell_total) as sell_total,
         SUM(pm.buy_quantity * 1000) as buy_quantity_kg,
@@ -40,7 +41,7 @@ const getDailyPlusMinus = async (req, res) => {
       params.push(item_id);
     }
 
-    query += ' GROUP BY pm.date, i.item_name ORDER BY pm.date DESC, i.item_name';
+    query += ' GROUP BY pm.date, i.item_name, i.nick_name ORDER BY pm.date DESC, i.item_name';
 
     const result = await retryDatabaseOperation(() => db.query(query, params));
     
