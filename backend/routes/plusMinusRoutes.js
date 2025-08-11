@@ -6,6 +6,7 @@ const {
   generateDailyPlusMinus, 
   getPlusMinusSummary, 
   getTodayPlusMinus,
+  getFuturePlusMinus,
   exportPDF,
   exportExcel
 } = require('../controllers/plusMinusController');
@@ -14,6 +15,7 @@ router.get('/', getDailyPlusMinus);
 router.post('/generate', generateDailyPlusMinus);
 router.get('/summary', getPlusMinusSummary);
 router.get('/today', getTodayPlusMinus);
+router.get('/future', getFuturePlusMinus);
 
 // Export routes
 router.get('/export/pdf', exportPDF);

@@ -322,6 +322,73 @@ const recalculateAllPlusMinus = async (req, res) => {
   }
 };
 
+// Get Future P&L (pending loading trades)
+const getFuturePlusMinus = async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        i.item_name,
+        i.nick_name,
+        SUM(CASE WHEN s.transaction_type = 'purchase' THEN s.quantity_packs * s.rate_per_10kg * 100 ELSE 0 END) as buy_total,
+        SUM(CASE WHEN s.transaction_type = 'sell' THEN s.quantity_packs * s.rate_per_10kg * 100 ELSE 0 END) as sell_total,
+        SUM(CASE WHEN s.transaction_type = 'purchase' THEN s.quantity_packs ELSE 0 END) as buy_quantity_packs,
+        SUM(CASE WHEN s.transaction_type = 'sell' THEN s.quantity_packs ELSE 0 END) as sell_quantity_packs,
+        CASE 
+          WHEN SUM(CASE WHEN s.transaction_type = 'purchase' THEN s.quantity_packs * 1000 ELSE 0 END) > 0 THEN 
+            SUM(CASE WHEN s.transaction_type = 'purchase' THEN s.quantity_packs * s.rate_per_10kg * 100 ELSE 0 END) / SUM(CASE WHEN s.transaction_type = 'purchase' THEN s.quantity_packs * 1000 ELSE 0 END) * 10
+          ELSE 0 
+        END as avg_buy_rate,
+        CASE 
+          WHEN SUM(CASE WHEN s.transaction_type = 'sell' THEN s.quantity_packs * 1000 ELSE 0 END) > 0 THEN 
+            SUM(CASE WHEN s.transaction_type = 'sell' THEN s.quantity_packs * s.rate_per_10kg * 100 ELSE 0 END) / SUM(CASE WHEN s.transaction_type = 'sell' THEN s.quantity_packs * 1000 ELSE 0 END) * 10
+          ELSE 0 
+        END as avg_sell_rate
+      FROM sauda s
+      LEFT JOIN items i ON s.item_id = i.id
+      WHERE EXISTS (
+        SELECT 1 FROM loading l 
+        WHERE l.sauda_id = s.id 
+        AND l.quantity_packs < s.quantity_packs
+      )
+      GROUP BY i.id, i.item_name, i.nick_name
+      ORDER BY i.item_name
+    `;
+
+    const result = await retryDatabaseOperation(() => db.query(query));
+    
+    // Calculate profit for each item
+    const itemsWithProfit = result.rows.map(row => {
+      const buyQuantityPacks = parseFloat(row.buy_quantity_packs) || 0;
+      const sellQuantityPacks = parseFloat(row.sell_quantity_packs) || 0;
+      const buyQuantityKg = buyQuantityPacks * 1000;
+      const sellQuantityKg = sellQuantityPacks * 1000;
+      const avgBuyRate = parseFloat(row.avg_buy_rate) || 0;
+      const avgSellRate = parseFloat(row.avg_sell_rate) || 0;
+      
+      // Calculate profit using the same logic as other P&L calculations
+      let profit = 0;
+      if (sellQuantityKg > 0) {
+        const avgSellRatePerKg = avgSellRate / 10;
+        const avgBuyRatePerKg = avgBuyRate / 10;
+        profit = (avgSellRatePerKg - avgBuyRatePerKg) * sellQuantityKg;
+      }
+      
+      return {
+        ...row,
+        buy_quantity: buyQuantityPacks, // Keep as packs (1 pack = 1 MT)
+        sell_quantity: sellQuantityPacks * 1000, // Convert to kg for profit calculation
+        profit: profit,
+        product_type: row.nick_name || row.item_name // Use nickname if available
+      };
+    });
+    
+    res.json(itemsWithProfit);
+  } catch (error) {
+    console.error('Get future plus minus error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 // Helper: Generate plus_minus for a given date, item, ex_plant
 async function generatePlusMinusFor(date, item_id, ex_plant_id) {
   // This should match your existing logic for generating a plus_minus row
@@ -644,6 +711,7 @@ module.exports = {
   generatePlusMinusForDate,
   getPlusMinusSummary,
   getTodayPlusMinus,
+  getFuturePlusMinus,
   recalculateAllPlusMinus,
   exportPDF,
   exportExcel,
