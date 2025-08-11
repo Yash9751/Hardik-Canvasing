@@ -418,28 +418,31 @@ const getFuturePlusMinus = async (req, res) => {
 
     const result = await retryDatabaseOperation(() => db.query(query));
     
-    // Calculate profit for each item
+    // Calculate pending profit for each item
     const itemsWithProfit = result.rows.map(row => {
       const buyQuantityPacks = parseFloat(row.buy_quantity_packs) || 0;
       const sellQuantityPacks = parseFloat(row.sell_quantity_packs) || 0;
-      const buyQuantityKg = buyQuantityPacks * 1000;
-      const sellQuantityKg = sellQuantityPacks * 1000;
       const avgBuyRate = parseFloat(row.avg_buy_rate) || 0;
       const avgSellRate = parseFloat(row.avg_sell_rate) || 0;
       
-      // Calculate profit using the same logic as other P&L calculations
-      let profit = 0;
-      if (sellQuantityKg > 0) {
+      // Calculate pending profit - this is the additional profit/loss that will be added when loading is completed
+      let pendingProfit = 0;
+      if (sellQuantityPacks > 0) {
         const avgSellRatePerKg = avgSellRate / 10;
         const avgBuyRatePerKg = avgBuyRate / 10;
-        profit = (avgSellRatePerKg - avgBuyRatePerKg) * sellQuantityKg;
+        const sellQuantityKg = sellQuantityPacks * 1000; // Convert packs to kg for profit calculation
+        pendingProfit = (avgSellRatePerKg - avgBuyRatePerKg) * sellQuantityKg;
+      } else if (buyQuantityPacks > 0) {
+        // For pending purchases, the profit will be realized when they are sold
+        // For now, we'll show 0 profit for pending purchases
+        pendingProfit = 0;
       }
       
       return {
         ...row,
         buy_quantity: buyQuantityPacks, // Keep as packs (1 pack = 1 MT)
         sell_quantity: sellQuantityPacks * 1000, // Convert to kg for profit calculation
-        profit: profit,
+        profit: pendingProfit, // This is the pending profit/loss
         product_type: row.nick_name || row.item_name // Use nickname if available
       };
     });
