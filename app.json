@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "7e0f4938-ead3-4bce-b738-a689c86b0ce7"
+      }
+    },
+    "android": {
+      "package": "com.yash230804.hardikcanvasing"
+    }
+  }
+}
