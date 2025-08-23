@@ -29,4 +29,7 @@ router.put('/:id', saudaController.updateSauda);
 // Delete sauda
 router.delete('/:id', saudaController.deleteSauda);
 
+// Add remarks column route
+router.post('/add-remarks-column', saudaController.addRemarksColumn);
+
 module.exports = router; 

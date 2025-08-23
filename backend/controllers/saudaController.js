@@ -692,6 +692,17 @@ Call - ${company.mobile_number || '9824711157'}`;
   }
 };
 
+// Add remarks column to sauda table
+const addRemarksColumn = async (req, res) => {
+  try {
+    await db.query('ALTER TABLE sauda ADD COLUMN IF NOT EXISTS remarks TEXT');
+    res.json({ message: 'Remarks column added successfully' });
+  } catch (error) {
+    console.error('Error adding remarks column:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 module.exports = {
   getAllSauda,
   getSaudaById,
@@ -701,5 +712,6 @@ module.exports = {
   getPendingSauda,
   getNextSaudaNumber,
   generateSaudaNotePDF,
-  generateSaudaMessage
+  generateSaudaMessage,
+  addRemarksColumn
 }; 
