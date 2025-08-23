@@ -53,7 +53,8 @@ const getAllSauda = async (req, res) => {
     let query = `
       SELECT s.*, p.party_name, p.mobile_number as party_mobile, p.city as party_city, p.gst_no as party_gstin, 
              i.item_name, ep.plant_name as ex_plant_name, b.broker_name,
-             dc.condition_name as delivery_condition, pc.condition_name as payment_condition
+             dc.condition_name as delivery_condition, pc.condition_name as payment_condition,
+             COALESCE(s.remarks, '') as remarks
       FROM sauda s
       LEFT JOIN parties p ON s.party_id = p.id
       LEFT JOIN items i ON s.item_id = i.id
@@ -146,7 +147,8 @@ const createSauda = async (req, res) => {
       payment_condition_id,
       loading_due_date,
       ex_plant_id,
-      broker_id
+      broker_id,
+      remarks
     } = req.body;
 
     if (!transaction_type || !date || !party_id || !item_id || !quantity_packs || !rate_per_10kg) {
@@ -160,10 +162,10 @@ const createSauda = async (req, res) => {
       `INSERT INTO sauda (
         sauda_no, transaction_type, date, party_id, item_id, quantity_packs, rate_per_10kg,
         delivery_condition_id, payment_condition_id, loading_due_date, ex_plant_id, broker_id,
-        pending_quantity_packs
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $6) RETURNING *`,
+        pending_quantity_packs, remarks
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $6, $13) RETURNING *`,
       [finalSaudaNo, transaction_type, date, party_id, item_id, quantity_packs, rate_per_10kg,
-       delivery_condition_id, payment_condition_id, loading_due_date, ex_plant_id, broker_id]
+       delivery_condition_id, payment_condition_id, loading_due_date, ex_plant_id, broker_id, remarks || '']
     );
     // Update stock after creating sauda
     await stockController.recalculateStock(item_id, ex_plant_id);
@@ -193,17 +195,19 @@ const updateSauda = async (req, res) => {
       payment_condition_id,
       loading_due_date,
       ex_plant_id,
-      broker_id
+      broker_id,
+      remarks
     } = req.body;
 
     const result = await db.query(
       `UPDATE sauda SET 
         sauda_no = $1, transaction_type = $2, date = $3, party_id = $4, item_id = $5,
         quantity_packs = $6, rate_per_10kg = $7, delivery_condition_id = $8, payment_condition_id = $9,
-        loading_due_date = $10, ex_plant_id = $11, broker_id = $12, pending_quantity_packs = $6
-       WHERE id = $13 RETURNING *`,
+        loading_due_date = $10, ex_plant_id = $11, broker_id = $12, pending_quantity_packs = $6,
+        remarks = $13
+       WHERE id = $14 RETURNING *`,
       [sauda_no, transaction_type, date, party_id, item_id, quantity_packs, rate_per_10kg,
-       delivery_condition_id, payment_condition_id, loading_due_date, ex_plant_id, broker_id, id]
+       delivery_condition_id, payment_condition_id, loading_due_date, ex_plant_id, broker_id, remarks || '', id]
     );
 
     if (result.rows.length === 0) {

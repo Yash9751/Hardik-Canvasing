@@ -309,7 +309,7 @@ const getPurchaseLoadingDetails = async (req, res) => {
         ROUND((l.vajan_kg / 1000) * s.rate_per_10kg * 100, 2) as total_value,
         l.created_at,
         'Purchase Loading' as loading_type,
-        l.note as remarks
+        COALESCE(l.remarks, l.note, '') as remarks
       FROM loading l
       LEFT JOIN sauda s ON l.sauda_id = s.id
       LEFT JOIN parties party ON s.party_id = party.id
@@ -343,7 +343,7 @@ const getSellLoadingDetails = async (req, res) => {
         ROUND((l.vajan_kg / 1000) * s.rate_per_10kg * 100, 2) as total_value,
         l.created_at,
         'Sell Loading' as loading_type,
-        l.note as remarks
+        COALESCE(l.remarks, l.note, '') as remarks
       FROM loading l
       LEFT JOIN sauda s ON l.sauda_id = s.id
       LEFT JOIN parties party ON s.party_id = party.id

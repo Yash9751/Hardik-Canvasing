@@ -44,7 +44,8 @@ const getAllLoading = async (req, res) => {
   try {
     const { sauda_id, date } = req.query;
     let query = `
-      SELECT l.*, s.sauda_no, s.transaction_type, p.party_name, i.item_name, ep.plant_name, t.transport_name
+      SELECT l.*, s.sauda_no, s.transaction_type, p.party_name, i.item_name, ep.plant_name, t.transport_name,
+             COALESCE(l.remarks, l.note, '') as remarks
       FROM loading l
       LEFT JOIN sauda s ON l.sauda_id = s.id
       LEFT JOIN parties p ON s.party_id = p.id
@@ -81,7 +82,8 @@ const getLoadingById = async (req, res) => {
   try {
     const { id } = req.params;
     const result = await db.query(`
-      SELECT l.*, s.sauda_no, s.transaction_type, p.party_name, i.item_name, ep.plant_name, t.transport_name
+      SELECT l.*, s.sauda_no, s.transaction_type, p.party_name, i.item_name, ep.plant_name, t.transport_name,
+             COALESCE(l.remarks, l.note, '') as remarks
       FROM loading l
       LEFT JOIN sauda s ON l.sauda_id = s.id
       LEFT JOIN parties p ON s.party_id = p.id
@@ -105,15 +107,17 @@ const getLoadingById = async (req, res) => {
 // Create new loading entry
 const createLoading = async (req, res) => {
   try {
-    const { sauda_id, loading_date, vajan_kg, note, transport_id, tanker_number } = req.body;
+    const { sauda_id, loading_date, vajan_kg, note, remarks, transport_id, tanker_number } = req.body;
+    // Use remarks if provided, otherwise use note
+    const finalNote = remarks || note || '';
 
     if (!sauda_id || !loading_date || !vajan_kg) {
       return res.status(400).json({ error: 'Required fields are missing' });
     }
 
     const result = await db.query(
-      'INSERT INTO loading (sauda_id, loading_date, vajan_kg, note, transport_id, tanker_number) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [sauda_id, loading_date, vajan_kg, note, transport_id, tanker_number]
+      'INSERT INTO loading (sauda_id, loading_date, vajan_kg, note, remarks, transport_id, tanker_number) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [sauda_id, loading_date, vajan_kg, finalNote, finalNote, transport_id, tanker_number]
     );
 
     // Get item_id and ex_plant_id from sauda
@@ -137,11 +141,13 @@ const createLoading = async (req, res) => {
 const updateLoading = async (req, res) => {
   try {
     const { id } = req.params;
-    const { sauda_id, loading_date, vajan_kg, note, transport_id, tanker_number } = req.body;
+    const { sauda_id, loading_date, vajan_kg, note, remarks, transport_id, tanker_number } = req.body;
+    // Use remarks if provided, otherwise use note
+    const finalNote = remarks || note || '';
 
     const result = await db.query(
-      'UPDATE loading SET sauda_id = $1, loading_date = $2, vajan_kg = $3, note = $4, transport_id = $5, tanker_number = $6 WHERE id = $7 RETURNING *',
-      [sauda_id, loading_date, vajan_kg, note, transport_id, tanker_number, id]
+      'UPDATE loading SET sauda_id = $1, loading_date = $2, vajan_kg = $3, note = $4, remarks = $5, transport_id = $6, tanker_number = $7 WHERE id = $8 RETURNING *',
+      [sauda_id, loading_date, vajan_kg, finalNote, finalNote, transport_id, tanker_number, id]
     );
 
     if (result.rows.length === 0) {
