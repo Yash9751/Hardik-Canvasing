@@ -146,8 +146,7 @@ const createSauda = async (req, res) => {
       payment_condition_id,
       loading_due_date,
       ex_plant_id,
-      broker_id,
-      remarks
+      broker_id
     } = req.body;
 
     if (!transaction_type || !date || !party_id || !item_id || !quantity_packs || !rate_per_10kg) {
@@ -161,10 +160,10 @@ const createSauda = async (req, res) => {
       `INSERT INTO sauda (
         sauda_no, transaction_type, date, party_id, item_id, quantity_packs, rate_per_10kg,
         delivery_condition_id, payment_condition_id, loading_due_date, ex_plant_id, broker_id,
-        pending_quantity_packs, remarks
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $6, $13) RETURNING *`,
+        pending_quantity_packs
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $6) RETURNING *`,
       [finalSaudaNo, transaction_type, date, party_id, item_id, quantity_packs, rate_per_10kg,
-       delivery_condition_id, payment_condition_id, loading_due_date, ex_plant_id, broker_id, remarks]
+       delivery_condition_id, payment_condition_id, loading_due_date, ex_plant_id, broker_id]
     );
     // Update stock after creating sauda
     await stockController.recalculateStock(item_id, ex_plant_id);
@@ -194,18 +193,17 @@ const updateSauda = async (req, res) => {
       payment_condition_id,
       loading_due_date,
       ex_plant_id,
-      broker_id,
-      remarks
+      broker_id
     } = req.body;
 
     const result = await db.query(
       `UPDATE sauda SET 
         sauda_no = $1, transaction_type = $2, date = $3, party_id = $4, item_id = $5,
         quantity_packs = $6, rate_per_10kg = $7, delivery_condition_id = $8, payment_condition_id = $9,
-        loading_due_date = $10, ex_plant_id = $11, broker_id = $12, pending_quantity_packs = $6, remarks = $13
-       WHERE id = $14 RETURNING *`,
+        loading_due_date = $10, ex_plant_id = $11, broker_id = $12, pending_quantity_packs = $6
+       WHERE id = $13 RETURNING *`,
       [sauda_no, transaction_type, date, party_id, item_id, quantity_packs, rate_per_10kg,
-       delivery_condition_id, payment_condition_id, loading_due_date, ex_plant_id, broker_id, remarks, id]
+       delivery_condition_id, payment_condition_id, loading_due_date, ex_plant_id, broker_id, id]
     );
 
     if (result.rows.length === 0) {
@@ -692,17 +690,6 @@ Call - ${company.mobile_number || '9824711157'}`;
   }
 };
 
-// Add remarks column to sauda table
-const addRemarksColumn = async (req, res) => {
-  try {
-    await db.query('ALTER TABLE sauda ADD COLUMN IF NOT EXISTS remarks TEXT');
-    res.json({ message: 'Remarks column added successfully' });
-  } catch (error) {
-    console.error('Error adding remarks column:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-};
-
 module.exports = {
   getAllSauda,
   getSaudaById,
@@ -712,6 +699,5 @@ module.exports = {
   getPendingSauda,
   getNextSaudaNumber,
   generateSaudaNotePDF,
-  generateSaudaMessage,
-  addRemarksColumn
+  generateSaudaMessage
 }; 
