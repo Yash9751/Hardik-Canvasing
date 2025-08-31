@@ -18,7 +18,7 @@ const getSummary = async (req, res) => {
         COALESCE(SUM(CASE WHEN transaction_type = 'purchase' THEN total_value ELSE 0 END), 0) as todayBuy,
         COALESCE(SUM(CASE WHEN transaction_type = 'sell' THEN total_value ELSE 0 END), 0) as todaySell,
         COALESCE(SUM(CASE WHEN transaction_type = 'sell' THEN total_value ELSE -total_value END), 0) as todayProfit
-      FROM sauda
+      FROM sauda 
       WHERE date = CURRENT_DATE
     `);
 
