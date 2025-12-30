@@ -181,12 +181,23 @@ const getStockWithPartyBreakdown = async (req, res) => {
             p.party_name,
             COALESCE(SUM(s.quantity_packs), 0) as buy_packs,
             COALESCE(SUM(s.quantity_packs * s.rate_per_10kg * 100), 0) as buy_value,
-            COALESCE(SUM(l.quantity_packs), 0) as loaded_packs,
-            COALESCE(SUM(l.quantity_packs * s.rate_per_10kg * 100), 0) as loaded_value,
+            COALESCE(SUM(loading_totals.loaded_packs), 0) as loaded_packs,
+            COALESCE(SUM(loading_totals.loaded_value), 0) as loaded_value,
             COALESCE(AVG(s.rate_per_10kg), 0) as avg_buy_rate
           FROM sauda s
           LEFT JOIN parties p ON s.party_id = p.id
-          LEFT JOIN loading l ON l.sauda_id = s.id
+          LEFT JOIN (
+            SELECT 
+              l.sauda_id,
+              SUM(l.quantity_packs) as loaded_packs,
+              SUM(l.quantity_packs * s2.rate_per_10kg * 100) as loaded_value
+            FROM loading l
+            JOIN sauda s2 ON l.sauda_id = s2.id
+            WHERE s2.transaction_type = 'purchase' 
+              AND s2.item_id = $1 
+              AND s2.ex_plant_id = $2
+            GROUP BY l.sauda_id
+          ) loading_totals ON loading_totals.sauda_id = s.id
           WHERE s.transaction_type = 'purchase' 
             AND s.item_id = $1 
             AND s.ex_plant_id = $2
@@ -200,12 +211,23 @@ const getStockWithPartyBreakdown = async (req, res) => {
             p.party_name,
             COALESCE(SUM(s.quantity_packs), 0) as sell_packs,
             COALESCE(SUM(s.quantity_packs * s.rate_per_10kg * 100), 0) as sell_value,
-            COALESCE(SUM(l.quantity_packs), 0) as loaded_packs,
-            COALESCE(SUM(l.quantity_packs * s.rate_per_10kg * 100), 0) as loaded_value,
+            COALESCE(SUM(loading_totals.loaded_packs), 0) as loaded_packs,
+            COALESCE(SUM(loading_totals.loaded_value), 0) as loaded_value,
             COALESCE(AVG(s.rate_per_10kg), 0) as avg_sell_rate
           FROM sauda s
           LEFT JOIN parties p ON s.party_id = p.id
-          LEFT JOIN loading l ON l.sauda_id = s.id
+          LEFT JOIN (
+            SELECT 
+              l.sauda_id,
+              SUM(l.quantity_packs) as loaded_packs,
+              SUM(l.quantity_packs * s2.rate_per_10kg * 100) as loaded_value
+            FROM loading l
+            JOIN sauda s2 ON l.sauda_id = s2.id
+            WHERE s2.transaction_type = 'sell' 
+              AND s2.item_id = $1 
+              AND s2.ex_plant_id = $2
+            GROUP BY l.sauda_id
+          ) loading_totals ON loading_totals.sauda_id = s.id
           WHERE s.transaction_type = 'sell' 
             AND s.item_id = $1 
             AND s.ex_plant_id = $2
