@@ -49,7 +49,7 @@ const generateSaudaNumber = async () => {
 // Get all sauda transactions
 const getAllSauda = async (req, res) => {
   try {
-    const { transaction_type, item_id, party_id, date } = req.query;
+    const { transaction_type, item_id, party_id, date, start_date, end_date, delivery_condition_id } = req.query;
     let query = `
       SELECT s.*, p.party_name, p.mobile_number as party_mobile, p.city as party_city, p.gst_no as party_gstin, 
              i.item_name, ep.plant_name as ex_plant_name, b.broker_name,
@@ -89,6 +89,24 @@ const getAllSauda = async (req, res) => {
       paramCount++;
       query += ` AND s.date = $${paramCount}`;
       params.push(date);
+    }
+
+    if (start_date) {
+      paramCount++;
+      query += ` AND s.date >= $${paramCount}`;
+      params.push(start_date);
+    }
+
+    if (end_date) {
+      paramCount++;
+      query += ` AND s.date <= $${paramCount}`;
+      params.push(end_date);
+    }
+
+    if (delivery_condition_id) {
+      paramCount++;
+      query += ` AND s.delivery_condition_id = $${paramCount}`;
+      params.push(delivery_condition_id);
     }
 
     query += ' ORDER BY s.date DESC, s.created_at DESC';
@@ -161,11 +179,11 @@ const createSauda = async (req, res) => {
     const result = await db.query(
       `INSERT INTO sauda (
         sauda_no, transaction_type, date, party_id, item_id, quantity_packs, rate_per_10kg,
-        delivery_condition_id, payment_condition_id, loading_due_date, ex_plant_id, broker_id,
+        delivery_condition_id, payment_condition_id, delivery_type, loading_due_date, ex_plant_id, broker_id,
         pending_quantity_packs, remarks
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $6, $13) RETURNING *`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $6, $14) RETURNING *`,
       [finalSaudaNo, transaction_type, date, party_id, item_id, quantity_packs, rate_per_10kg,
-       delivery_condition_id, payment_condition_id, loading_due_date, ex_plant_id, broker_id, remarks || '']
+       delivery_condition_id, payment_condition_id, delivery_type || null, loading_due_date, ex_plant_id, broker_id, remarks || '']
     );
     // Update stock after creating sauda
     await stockController.recalculateStock(item_id, ex_plant_id);
@@ -193,6 +211,7 @@ const updateSauda = async (req, res) => {
       rate_per_10kg,
       delivery_condition_id,
       payment_condition_id,
+      delivery_type,
       loading_due_date,
       ex_plant_id,
       broker_id,
@@ -203,11 +222,11 @@ const updateSauda = async (req, res) => {
       `UPDATE sauda SET 
         sauda_no = $1, transaction_type = $2, date = $3, party_id = $4, item_id = $5,
         quantity_packs = $6, rate_per_10kg = $7, delivery_condition_id = $8, payment_condition_id = $9,
-        loading_due_date = $10, ex_plant_id = $11, broker_id = $12, pending_quantity_packs = $6,
-        remarks = $13
-       WHERE id = $14 RETURNING *`,
+        delivery_type = $10, loading_due_date = $11, ex_plant_id = $12, broker_id = $13, pending_quantity_packs = $6,
+        remarks = $14
+       WHERE id = $15 RETURNING *`,
       [sauda_no, transaction_type, date, party_id, item_id, quantity_packs, rate_per_10kg,
-       delivery_condition_id, payment_condition_id, loading_due_date, ex_plant_id, broker_id, remarks || '', id]
+       delivery_condition_id, payment_condition_id, delivery_type || null, loading_due_date, ex_plant_id, broker_id, remarks || '', id]
     );
 
     if (result.rows.length === 0) {
