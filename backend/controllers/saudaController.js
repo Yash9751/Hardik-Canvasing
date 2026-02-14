@@ -163,6 +163,7 @@ const createSauda = async (req, res) => {
       rate_per_10kg,
       delivery_condition_id,
       payment_condition_id,
+      delivery_type,
       loading_due_date,
       ex_plant_id,
       broker_id,

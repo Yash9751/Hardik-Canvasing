@@ -1,0 +1,33 @@
+{
+  "cli": {
+    "version": ">= 16.17.3",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://romantic-renewal-production.up.railway.app/api"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://romantic-renewal-production.up.railway.app/api"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://romantic-renewal-production.up.railway.app/api"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "name": "traders-desktop",
+  "version": "1.0.0",
+  "description": "Traders Desktop (Windows) - packaged via Electron",
+  "author": "Traders",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:web": "node scripts/build-web.js",
+    "make:ico": "node scripts/make-ico.js",
+    "build:win": "npm run build:web && npm run make:ico && electron-builder --win --x64"
+  },
+  "devDependencies": {
+    "electron": "^32.3.3",
+    "electron-builder": "^25.1.8",
+    "png-to-ico": "^2.1.0",
+    "sharp": "^0.33.5"
+  },
+  "build": {
+    "appId": "com.traders.desktop",
+    "productName": "Traders",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "static-server.js",
+      "splash.html",
+      "assets/**/*",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        "nsis"
+      ]
+    }
+  }
+}
+
